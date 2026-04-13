@@ -37,7 +37,6 @@
     --tooltip-border: #e2e8f0;
     --tooltip-text: #1a1a2e;
   }
-
   [data-theme="dark"] {
     --bg-primary: #1a1a2e;
     --bg-secondary: rgba(255,255,255,0.05);
@@ -69,279 +68,80 @@
     --tooltip-border: rgba(255,255,255,0.1);
     --tooltip-text: #e8e8e8;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    min-height: 100vh;
-    padding: 20px;
-    transition: background 0.3s, color 0.3s;
+    background: var(--bg-primary); color: var(--text-primary);
+    min-height: 100vh; padding: 20px; transition: background 0.3s, color 0.3s;
   }
-
   .container { max-width: 1400px; margin: 0 auto; }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
   .header-left { flex: 1; min-width: 200px; }
-
-  .station-name {
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-  }
-
-  h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--accent);
-    line-height: 1.2;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .live-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(56,161,105,0.1);
-    border: 1px solid rgba(56,161,105,0.3);
-    color: var(--green);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-
-  .live-dot {
-    width: 6px; height: 6px;
-    background: var(--green);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-
+  .station-name { font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  h1 { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1.2; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .live-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(56,161,105,0.1); border: 1px solid rgba(56,161,105,0.3); color: var(--green); font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; }
+  .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  .theme-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    transition: all 0.2s;
-  }
+  .theme-toggle { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; cursor: pointer; font-size: 0.8rem; color: var(--text-secondary); transition: all 0.2s; }
   .theme-toggle:hover { background: var(--accent-light); }
-
-  .time-controls { display: flex; gap: 6px; flex-wrap: wrap; }
-
-  .time-btn {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .time-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .time-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
-
-  .section-label {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 28px 0 12px;
-  }
-
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 15px;
-  }
-
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.4s ease both;
-    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .card-label {
-    font-size: 0.7rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-  }
-
-  .card-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--text-primary);
-  }
+  #last-updated { color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; }
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .tab:hover { color: var(--accent); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .section-label { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 24px 0 12px; }
+  .section-label:first-child { margin-top: 0; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
+  .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); animation: fadeUp 0.4s ease both; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .card-label { font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .card-value { font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
   .card-value span { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
-
-  .card-sub {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-top: 6px;
-    line-height: 1.6;
-  }
-
-  .rain-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-  }
-
-  .rain-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.4s ease both;
-    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  }
-
-  .records-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-  }
-
-  .record-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.4s ease both;
-    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  }
-
-  .record-value {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1;
-    margin-top: 8px;
-  }
+  .card-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; line-height: 1.6; }
+  .rain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+  .rain-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); animation: fadeUp 0.4s ease both; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+  .records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+  .record-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); animation: fadeUp 0.4s ease both; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+  .record-value { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); line-height: 1; margin-top: 8px; }
   .record-value span { font-size: 0.75rem; color: var(--text-muted); }
-
   .record-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; }
-
   .charts-grid { display: grid; gap: 16px; }
-
-  .chart-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.4s ease both;
-    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  }
-
-  .chart-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .chart-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
+  .chart-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; box-shadow: var(--shadow); animation: fadeUp 0.4s ease both; transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+  .chart-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
   .chart-legend { display: flex; gap: 16px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); }
   .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-  .chart-wrap { position: relative; height: 200px; }
-
-  .loading {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-  }
-  .loading::after {
-    content: '';
-    display: block;
-    width: 28px; height: 28px;
-    border: 2px solid var(--border-color);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 14px auto 0;
-  }
+  .chart-wrap { position: relative; height: 220px; }
+  .time-controls { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .time-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+  .time-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .time-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .explorer-form { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .form-group input[type="date"] { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 0.85rem; }
+  .form-group input[type="date"]:focus { outline: none; border-color: var(--accent); }
+  .search-btn { padding: 8px 20px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+  .search-btn:hover { opacity: 0.9; }
+  .quick-picks { display: flex; gap: 6px; flex-wrap: wrap; }
+  .quick-pick { padding: 6px 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.7rem; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+  .quick-pick:hover { border-color: var(--accent); color: var(--accent); }
+  .monthly-table-wrap { overflow-x: auto; margin-top: 16px; }
+  .monthly-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .monthly-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+  .monthly-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+  .monthly-table tr:hover td { background: var(--accent-light); }
+  .loading { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.85rem; }
+  .loading::after { content: ''; display: block; width: 28px; height: 28px; border: 2px solid var(--border-color); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 14px auto 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  .error {
-    background: rgba(229,62,62,0.1);
-    border: 1px solid rgba(229,62,62,0.3);
-    border-radius: 8px;
-    padding: 14px;
-    color: var(--red);
-    font-size: 0.85rem;
-    margin-bottom: 16px;
-  }
-
-  footer {
-    text-align: center;
-    margin-top: 36px;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-  }
-
-  #last-updated {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    margin-top: 4px;
-  }
+  .error { background: rgba(229,62,62,0.1); border: 1px solid rgba(229,62,62,0.3); border-radius: 8px; padding: 14px; color: var(--red); font-size: 0.85rem; margin-bottom: 16px; }
+  footer { text-align: center; margin-top: 36px; color: var(--text-muted); font-size: 0.75rem; }
 </style>
 </head>
 <body>
 <div class="container">
-
   <header>
     <div class="header-left">
       <div class="station-name">Personal Weather Station — Eugene, OR</div>
@@ -350,467 +150,325 @@
     </div>
     <div class="header-right">
       <span class="live-badge"><span class="live-dot"></span>LIVE</span>
-      <button class="theme-toggle" onclick="toggleTheme()">
-        <span id="theme-icon">☀️</span> <span id="theme-label">Light</span>
-      </button>
-      <div class="time-controls">
-        <button class="time-btn active" onclick="setRange(1)"   id="btn-1">24H</button>
-        <button class="time-btn"        onclick="setRange(7)"   id="btn-7">7D</button>
-        <button class="time-btn"        onclick="setRange(30)"  id="btn-30">30D</button>
-        <button class="time-btn"        onclick="setRange(365)" id="btn-365">1Y</button>
-      </div>
+      <button class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon">☀️</span> <span id="theme-label">Light</span></button>
     </div>
   </header>
-
+  <div class="tab-bar">
+    <button class="tab active" data-tab="live" onclick="switchTab('live')">Live</button>
+    <button class="tab" data-tab="explorer" onclick="switchTab('explorer')">Explorer</button>
+    <button class="tab" data-tab="monthly" onclick="switchTab('monthly')">Monthly</button>
+    <button class="tab" data-tab="records" onclick="switchTab('records')">Records</button>
+  </div>
   <div id="error-box"></div>
-  <div id="main-content"><div class="loading">Loading weather data...</div></div>
-
+  <div id="tab-content"><div class="loading">Loading weather data...</div></div>
   <footer>Eugene, OR &bull; Powered by Ambient Weather Network</footer>
 </div>
-
 <script>
-  // ============================================================
   // THEME
-  // ============================================================
   function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
     localStorage.setItem('theme', isDark ? 'light' : 'dark');
     updateThemeButton();
-    // Redraw charts with new colors
-    if (lastRows) renderCharts(lastRows);
+    if (activeTab === 'live' && liveCache.rows) renderLiveCharts(liveCache.rows);
+    if (activeTab === 'explorer' && explorerCache.rows) renderExplorerChart(explorerCache.rows);
+    if (activeTab === 'monthly' && monthlyCache.data) renderMonthlyCharts(monthlyCache.data);
   }
-
   function updateThemeButton() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
     document.getElementById('theme-label').textContent = isDark ? 'Dark' : 'Light';
   }
-
-  // Apply saved theme
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  // Update button after DOM ready
+  document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
   document.addEventListener('DOMContentLoaded', updateThemeButton);
 
-  // ============================================================
-  // CONFIGURATION
-  // ============================================================
+  // CONFIG & STATE
   const SUPABASE_URL = 'https://qafjqqnwnxzeluikjhoz.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhZmpxcW53bnh6ZWx1aWtqaG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzY1ODMsImV4cCI6MjA5MTYxMjU4M30.zdqSoeNxSH316m12PcbhNjRoJuWJz6s_klJLvuDuBdE';
+  const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+  let activeTab = 'live', currentRange = 1, charts = {};
+  let liveCache = {}, explorerCache = {}, monthlyCache = {}, recordsCache = {};
 
-  let currentRange = 1;
-  let charts = {};
-  let lastRows = null;
-
+  // HELPERS
   function getChartDefaults() {
-    const style = getComputedStyle(document.documentElement);
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: style.getPropertyValue('--tooltip-bg').trim(),
-          borderColor: style.getPropertyValue('--tooltip-border').trim(),
-          borderWidth: 1,
-          titleColor: style.getPropertyValue('--text-muted').trim(),
-          bodyColor: style.getPropertyValue('--tooltip-text').trim(),
-          titleFont: { size: 10 },
-          bodyFont: { size: 12 },
-          padding: 10,
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: style.getPropertyValue('--chart-grid').trim() },
-          ticks: { color: style.getPropertyValue('--text-muted').trim(), font: { size: 9 }, maxTicksLimit: 8 }
-        },
-        y: {
-          grid: { color: style.getPropertyValue('--chart-grid').trim() },
-          ticks: { color: style.getPropertyValue('--text-muted').trim(), font: { size: 9 } }
-        }
-      }
+    const s = getComputedStyle(document.documentElement);
+    return { responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:s.getPropertyValue('--tooltip-bg').trim(),borderColor:s.getPropertyValue('--tooltip-border').trim(),borderWidth:1,titleColor:s.getPropertyValue('--text-muted').trim(),bodyColor:s.getPropertyValue('--tooltip-text').trim(),titleFont:{size:10},bodyFont:{size:12},padding:10}},
+      scales:{x:{grid:{color:s.getPropertyValue('--chart-grid').trim()},ticks:{color:s.getPropertyValue('--text-muted').trim(),font:{size:9},maxTicksLimit:8}},y:{grid:{color:s.getPropertyValue('--chart-grid').trim()},ticks:{color:s.getPropertyValue('--text-muted').trim(),font:{size:9}}}}
     };
   }
-
-  function setRange(days) {
-    currentRange = days;
-    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(`btn-${days}`).classList.add('active');
-    loadData();
-  }
-
-  function windDir(deg) {
-    if (deg == null) return '--';
-    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-    return dirs[Math.round(deg / 22.5) % 16];
-  }
-
-  function formatTime(ts, rangeDays) {
-    const d = new Date(ts);
-    if (rangeDays <= 1)  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    if (rangeDays <= 7)  return d.toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    return d.toLocaleDateString([], {month:'short', day:'numeric'});
-  }
-
-  function fmt(val, dec=1) {
-    return val != null ? Number(val).toFixed(dec) : '--';
-  }
-
-  function formatDate(ts) {
-    return new Date(ts).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'});
-  }
+  function windDir(deg){if(deg==null)return'--';const d=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];return d[Math.round(deg/22.5)%16];}
+  function formatTime(ts,rangeDays){const d=new Date(ts);if(rangeDays<=1)return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});if(rangeDays<=7)return d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});return d.toLocaleDateString([],{month:'short',day:'numeric'});}
+  function fmt(val,dec=1){return val!=null?Number(val).toFixed(dec):'--';}
+  function formatDate(ts){return new Date(ts).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});}
+  function destroyCharts(){Object.values(charts).forEach(c=>c.destroy());charts={};}
 
   function computeRangeStats(rows) {
-    const valid = (arr, key) => arr.filter(r => r[key] != null);
-
-    const temps = valid(rows, 'temp_outdoor');
-    const winds = valid(rows, 'wind_speed');
-    const gusts = valid(rows, 'wind_gust');
-    const rains = valid(rows, 'rain_hourly');
-
-    // High/low temp with timestamps
-    let hotRow = null, coldRow = null;
-    for (const r of temps) {
-      if (!hotRow || r.temp_outdoor > hotRow.temp_outdoor) hotRow = r;
-      if (!coldRow || r.temp_outdoor < coldRow.temp_outdoor) coldRow = r;
-    }
-
-    // Max gust with timestamp
-    let gustRow = null;
-    for (const r of gusts) {
-      if (!gustRow || r.wind_gust > gustRow.wind_gust) gustRow = r;
-    }
-
-    // Max rain_daily with timestamp (rainiest day in range)
-    let rainRow = null;
-    for (const r of valid(rows, 'rain_daily')) {
-      if (!rainRow || r.rain_daily > rainRow.rain_daily) rainRow = r;
-    }
-
-    // Averages
-    const avgTemp = temps.length ? temps.reduce((s,r) => s + r.temp_outdoor, 0) / temps.length : null;
-    const avgWind = winds.length ? winds.reduce((s,r) => s + r.wind_speed, 0) / winds.length : null;
-    const avgHumidity = valid(rows, 'humidity_outdoor').length ?
-      valid(rows, 'humidity_outdoor').reduce((s,r) => s + r.humidity_outdoor, 0) / valid(rows, 'humidity_outdoor').length : null;
-
-    // Total rain: sum max rain_daily per calendar day
-    const dailyMaxRain = {};
-    for (const r of valid(rows, 'rain_daily')) {
-      const day = r.recorded_at.substring(0, 10);
-      if (!dailyMaxRain[day] || r.rain_daily > dailyMaxRain[day]) {
-        dailyMaxRain[day] = r.rain_daily;
-      }
-    }
-    const totalRain = Object.values(dailyMaxRain).reduce((s,v) => s + v, 0);
-
-    // Max hourly rain rate
-    let maxRainRate = 0;
-    for (const r of rains) {
-      if (r.rain_hourly > maxRainRate) maxRainRate = r.rain_hourly;
-    }
-
-    return {
-      hot: hotRow, cold: coldRow, gustRow, rainRow,
-      avgTemp, avgWind, avgHumidity,
-      totalRain, maxRainRate
-    };
+    const valid=(arr,key)=>arr.filter(r=>r[key]!=null);
+    const temps=valid(rows,'temp_outdoor'),winds=valid(rows,'wind_speed'),gusts=valid(rows,'wind_gust'),rains=valid(rows,'rain_hourly');
+    let hotRow=null,coldRow=null;
+    for(const r of temps){if(!hotRow||r.temp_outdoor>hotRow.temp_outdoor)hotRow=r;if(!coldRow||r.temp_outdoor<coldRow.temp_outdoor)coldRow=r;}
+    let gustRow=null;for(const r of gusts){if(!gustRow||r.wind_gust>gustRow.wind_gust)gustRow=r;}
+    let rainRow=null;for(const r of valid(rows,'rain_daily')){if(!rainRow||r.rain_daily>rainRow.rain_daily)rainRow=r;}
+    const avgTemp=temps.length?temps.reduce((s,r)=>s+r.temp_outdoor,0)/temps.length:null;
+    const avgWind=winds.length?winds.reduce((s,r)=>s+r.wind_speed,0)/winds.length:null;
+    const humids=valid(rows,'humidity_outdoor');
+    const avgHumidity=humids.length?humids.reduce((s,r)=>s+r.humidity_outdoor,0)/humids.length:null;
+    const dailyMaxRain={};for(const r of valid(rows,'rain_daily')){const day=r.recorded_at.substring(0,10);if(!dailyMaxRain[day]||r.rain_daily>dailyMaxRain[day])dailyMaxRain[day]=r.rain_daily;}
+    const totalRain=Object.values(dailyMaxRain).reduce((s,v)=>s+v,0);
+    let maxRainRate=0;for(const r of rains){if(r.rain_hourly>maxRainRate)maxRainRate=r.rain_hourly;}
+    return{hot:hotRow,cold:coldRow,gustRow,rainRow,avgTemp,avgWind,avgHumidity,totalRain,maxRainRate};
   }
 
-  const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
-
-  async function fetchRows(since) {
-    let rows = [], offset = 0;
-    while (true) {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/weather_data?recorded_at=gte.${since}&order=recorded_at.asc&limit=1000&offset=${offset}`,
-        { headers: H }
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const page = await res.json();
-      rows = rows.concat(page);
-      if (page.length < 1000) break;
-      offset += 1000;
-    }
+  async function fetchRows(since,until){
+    let rows=[],offset=0;
+    let url=`${SUPABASE_URL}/rest/v1/weather_data?recorded_at=gte.${since}&order=recorded_at.asc&limit=1000`;
+    if(until)url+=`&recorded_at=lte.${until}`;
+    while(true){const res=await fetch(url+`&offset=${offset}`,{headers:H});if(!res.ok)throw new Error(`HTTP ${res.status}`);const page=await res.json();rows=rows.concat(page);if(page.length<1000)break;offset+=1000;}
     return rows;
   }
-
-  async function fetchRecords() {
-    const base = `${SUPABASE_URL}/rest/v1/weather_data`;
-    const [hotR, coldR, rainR, gustR] = await Promise.all([
-      fetch(`${base}?select=temp_outdoor,recorded_at&temp_outdoor=not.is.null&order=temp_outdoor.desc.nullslast&limit=1`, {headers:H}),
-      fetch(`${base}?select=temp_outdoor,recorded_at&temp_outdoor=not.is.null&order=temp_outdoor.asc.nullslast&limit=1`,  {headers:H}),
-      fetch(`${base}?select=rain_daily,recorded_at&rain_daily=not.is.null&order=rain_daily.desc.nullslast&limit=1`,     {headers:H}),
-      fetch(`${base}?select=wind_gust,recorded_at&wind_gust=not.is.null&order=wind_gust.desc.nullslast&limit=1`,       {headers:H}),
-    ]);
-    const [hot, cold, rain, gust] = await Promise.all([hotR.json(), coldR.json(), rainR.json(), gustR.json()]);
-    return { hot: hot[0], cold: cold[0], rain: rain[0], gust: gust[0] };
+  async function fetchRecords(){
+    const base=`${SUPABASE_URL}/rest/v1/weather_data`;
+    const[hotR,coldR,rainR,gustR]=await Promise.all([
+      fetch(`${base}?select=temp_outdoor,recorded_at&temp_outdoor=not.is.null&order=temp_outdoor.desc.nullslast&limit=1`,{headers:H}),
+      fetch(`${base}?select=temp_outdoor,recorded_at&temp_outdoor=not.is.null&order=temp_outdoor.asc.nullslast&limit=1`,{headers:H}),
+      fetch(`${base}?select=rain_daily,recorded_at&rain_daily=not.is.null&order=rain_daily.desc.nullslast&limit=1`,{headers:H}),
+      fetch(`${base}?select=wind_gust,recorded_at&wind_gust=not.is.null&order=wind_gust.desc.nullslast&limit=1`,{headers:H})]);
+    const[hot,cold,rain,gust]=await Promise.all([hotR.json(),coldR.json(),rainR.json(),gustR.json()]);
+    return{hot:hot[0],cold:cold[0],rain:rain[0],gust:gust[0]};
+  }
+  async function fetchYTD(){
+    const base=`${SUPABASE_URL}/rest/v1/weather_data`,year=new Date().getFullYear(),cm=new Date().getMonth();let ytd=0;const fetches=[];
+    for(let m=0;m<cm;m++){const s=new Date(year,m,1).toISOString(),e=new Date(year,m+1,1).toISOString();fetches.push(fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${s}&recorded_at=lt.${e}&order=recorded_at.desc&limit=1`,{headers:H}).then(r=>r.json()));}
+    fetches.push(fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${new Date(year,cm,1).toISOString()}&order=recorded_at.desc&limit=1`,{headers:H}).then(r=>r.json()));
+    const results=await Promise.all(fetches);for(const res of results){if(res[0]?.rain_monthly!=null)ytd+=res[0].rain_monthly;}
+    return ytd>0?ytd.toFixed(2):'--';
   }
 
-  async function fetchYTD() {
-    const base = `${SUPABASE_URL}/rest/v1/weather_data`;
-    const year = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
-    let ytd = 0;
-
-    const fetches = [];
-    for (let m = 0; m < currentMonth; m++) {
-      const start = new Date(year, m, 1).toISOString();
-      const end = new Date(year, m + 1, 1).toISOString();
-      fetches.push(
-        fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&order=recorded_at.desc&limit=1`, {headers:H})
-          .then(r => r.json())
-      );
-    }
-    const curStart = new Date(year, currentMonth, 1).toISOString();
-    fetches.push(
-      fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${curStart}&order=recorded_at.desc&limit=1`, {headers:H})
-        .then(r => r.json())
-    );
-
-    const results = await Promise.all(fetches);
-    for (const res of results) {
-      if (res[0]?.rain_monthly != null) ytd += res[0].rain_monthly;
-    }
-    return ytd > 0 ? ytd.toFixed(2) : '--';
+  // TAB SYSTEM
+  function switchTab(name){
+    activeTab=name;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+    destroyCharts();
+    if(name==='live')loadLiveTab();
+    else if(name==='explorer')renderExplorerTab();
+    else if(name==='monthly')loadMonthlyTab();
+    else if(name==='records')loadRecordsTab();
   }
 
-  async function loadData() {
-    document.getElementById('main-content').innerHTML = '<div class="loading">Loading weather data...</div>';
-    document.getElementById('error-box').innerHTML = '';
-
-    try {
-      const since = new Date(Date.now() - currentRange * 86400000).toISOString();
-      const [rows, allTimeRecords, ytdRain] = await Promise.all([fetchRows(since), fetchRecords(), fetchYTD()]);
-
-      if (!rows.length) throw new Error('No data found for this time range.');
-
-      const latest = rows[rows.length - 1];
-      document.getElementById('last-updated').textContent =
-        `Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
-
-      const rangeStats = computeRangeStats(rows);
-      lastRows = rows;
-      renderDashboard(rows, latest, allTimeRecords, ytdRain, rangeStats);
-
-    } catch (err) {
-      document.getElementById('error-box').innerHTML = `<div class="error">${err.message}</div>`;
-      document.getElementById('main-content').innerHTML = '';
-    }
+  // LIVE TAB
+  async function loadLiveTab(){
+    const tc=document.getElementById('tab-content');
+    tc.innerHTML='<div class="loading">Loading weather data...</div>';
+    try{
+      const since=new Date(Date.now()-currentRange*86400000).toISOString();
+      const[rows,allRec,ytd]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD()]);
+      if(!rows.length)throw new Error('No data found.');
+      const latest=rows[rows.length-1];
+      document.getElementById('last-updated').textContent=`Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
+      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows)};
+      renderLiveTab();
+    }catch(err){document.getElementById('error-box').innerHTML=`<div class="error">${err.message}</div>`;tc.innerHTML='';}
   }
-
-  function renderDashboard(rows, latest, allTimeRecords, ytdRain, stats) {
-    const rangeLabel = currentRange === 1 ? '24 Hours' : currentRange === 7 ? '7 Days' : currentRange === 30 ? '30 Days' : '12 Months';
-
-    document.getElementById('main-content').innerHTML = `
+  function renderLiveTab(){
+    const{rows,latest,allRec,ytd,stats}=liveCache;
+    const rl=currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
+    document.getElementById('tab-content').innerHTML=`
+      <div class="time-controls">
+        <button class="time-btn ${currentRange===1?'active':''}" onclick="setRange(1)">24H</button>
+        <button class="time-btn ${currentRange===7?'active':''}" onclick="setRange(7)">7D</button>
+        <button class="time-btn ${currentRange===30?'active':''}" onclick="setRange(30)">30D</button>
+        <button class="time-btn ${currentRange===365?'active':''}" onclick="setRange(365)">1Y</button>
+      </div>
       <div class="section-label">Current Conditions</div>
       <div class="cards-grid">
-        <div class="card">
-          <div class="card-label">Temperature</div>
-          <div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div>
-          <div class="card-sub">Indoor: ${fmt(latest.temp_indoor,1)}°F</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Feels Like</div>
-          <div class="card-value">${fmt(latest.feels_like,1)}<span>°F</span></div>
-          <div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Humidity</div>
-          <div class="card-value">${latest.humidity_outdoor ?? '--'}<span>%</span></div>
-          <div class="card-sub">Indoor: ${latest.humidity_indoor ?? '--'}%</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Wind</div>
-          <div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div>
-          <div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div>
-        </div>
-        <div class="card">
-          <div class="card-label">UV Index</div>
-          <div class="card-value">${latest.uv_index ?? '--'}</div>
-          <div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Pressure</div>
-          <div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div>
-          <div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div>
-        </div>
+        <div class="card"><div class="card-label">Temperature</div><div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">Indoor: ${fmt(latest.temp_indoor,1)}°F</div></div>
+        <div class="card"><div class="card-label">Feels Like</div><div class="card-value">${fmt(latest.feels_like,1)}<span>°F</span></div><div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div></div>
+        <div class="card"><div class="card-label">Humidity</div><div class="card-value">${latest.humidity_outdoor??'--'}<span>%</span></div><div class="card-sub">Indoor: ${latest.humidity_indoor??'--'}%</div></div>
+        <div class="card"><div class="card-label">Wind</div><div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div><div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div></div>
+        <div class="card"><div class="card-label">UV Index</div><div class="card-value">${latest.uv_index??'--'}</div><div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div></div>
+        <div class="card"><div class="card-label">Pressure</div><div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div><div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div></div>
       </div>
-
-      <div class="section-label">${rangeLabel} Summary</div>
+      <div class="section-label">${rl} Summary</div>
       <div class="cards-grid">
-        <div class="card">
-          <div class="card-label">High Temp</div>
-          <div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div>
-          <div class="card-sub">${stats.hot ? formatDate(stats.hot.recorded_at) : '--'}</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Low Temp</div>
-          <div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div>
-          <div class="card-sub">${stats.cold ? formatDate(stats.cold.recorded_at) : '--'}</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Avg Temp</div>
-          <div class="card-value">${fmt(stats.avgTemp,1)}<span>°F</span></div>
-          <div class="card-sub">Avg humidity: ${fmt(stats.avgHumidity,0)}%</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Total Rain</div>
-          <div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div>
-          <div class="card-sub">Max rate: ${fmt(stats.maxRainRate,2)} in/hr</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Max Gust</div>
-          <div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div>
-          <div class="card-sub">${stats.gustRow ? formatDate(stats.gustRow.recorded_at) : '--'}</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Avg Wind</div>
-          <div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div>
-          <div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div>
+        <div class="card"><div class="card-label">High Temp</div><div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.hot?formatDate(stats.hot.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Low Temp</div><div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.cold?formatDate(stats.cold.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Avg Temp</div><div class="card-value">${fmt(stats.avgTemp,1)}<span>°F</span></div><div class="card-sub">Avg humidity: ${fmt(stats.avgHumidity,0)}%</div></div>
+        <div class="card"><div class="card-label">Total Rain</div><div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div><div class="card-sub">Max rate: ${fmt(stats.maxRainRate,2)} in/hr</div></div>
+        <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
+      </div>
+      <div class="section-label">Charts — Last ${rl}</div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Temperature</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-feels)"></div>Feels Like</div></div></div><div class="chart-wrap"><canvas id="tempChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Rainfall</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Hourly</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Daily</div></div></div><div class="chart-wrap"><canvas id="rainChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Wind</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind)"></div>Speed</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind-light)"></div>Gust</div></div></div><div class="chart-wrap"><canvas id="windChart"></canvas></div></div>
+      </div>`;
+    renderLiveCharts(rows);
+  }
+  function renderLiveCharts(rows){
+    destroyCharts();const labels=rows.map(r=>formatTime(r.recorded_at,currentRange));
+    const s=getComputedStyle(document.documentElement),d=getChartDefaults();
+    charts.temp=new Chart(document.getElementById('tempChart'),{type:'line',data:{labels,datasets:[{label:'Temp',data:rows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:'Feels',data:rows.map(r=>r.feels_like),borderColor:s.getPropertyValue('--chart-feels').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,borderDash:[4,3],fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
+    charts.rain=new Chart(document.getElementById('rainChart'),{type:'bar',data:{labels,datasets:[{label:'Hourly',data:rows.map(r=>r.rain_hourly),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderRadius:2},{label:'Daily',data:rows.map(r=>r.rain_daily),backgroundColor:s.getPropertyValue('--chart-rain-bg').trim(),borderColor:s.getPropertyValue('--chart-rain').trim(),borderWidth:1,type:'line',pointRadius:0,tension:0.4,fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+    charts.wind=new Chart(document.getElementById('windChart'),{type:'line',data:{labels,datasets:[{label:'Speed',data:rows.map(r=>r.wind_speed),borderColor:s.getPropertyValue('--chart-wind').trim(),backgroundColor:s.getPropertyValue('--chart-wind-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:'Gust',data:rows.map(r=>r.wind_gust),borderColor:s.getPropertyValue('--chart-wind-light').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,borderDash:[4,3],fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+' mph'}}}}});
+  }
+  function setRange(days){currentRange=days;loadLiveTab();}
+
+  // EXPLORER TAB
+  function renderExplorerTab(){
+    const today=new Date().toISOString().split('T')[0];
+    const weekAgo=new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+    document.getElementById('tab-content').innerHTML=`
+      <div class="section-label">Date Range Explorer</div>
+      <div class="explorer-form">
+        <div class="form-group"><label>Start Date</label><input type="date" id="start-date" value="${weekAgo}"></div>
+        <div class="form-group"><label>End Date</label><input type="date" id="end-date" value="${today}"></div>
+        <button class="search-btn" onclick="runExplorer()">Search</button>
+        <div class="quick-picks">
+          <button class="quick-pick" onclick="quickPick('yesterday')">Yesterday</button>
+          <button class="quick-pick" onclick="quickPick('7d')">Last 7 Days</button>
+          <button class="quick-pick" onclick="quickPick('30d')">Last 30 Days</button>
+          <button class="quick-pick" onclick="quickPick('thisMonth')">This Month</button>
+          <button class="quick-pick" onclick="quickPick('lastMonth')">Last Month</button>
         </div>
       </div>
-
-      <div class="section-label">Rainfall</div>
-      <div class="rain-grid">
-        <div class="rain-card">
-          <div class="card-label">Today</div>
-          <div class="record-value">${fmt(latest.rain_daily,2)}<span> in</span></div>
-          <div class="record-date">Last hour: ${fmt(latest.rain_hourly,2)} in</div>
-        </div>
-        <div class="rain-card">
-          <div class="card-label">This Week</div>
-          <div class="record-value">${fmt(latest.rain_weekly,2)}<span> in</span></div>
-        </div>
-        <div class="rain-card">
-          <div class="card-label">This Month</div>
-          <div class="record-value">${fmt(latest.rain_monthly,2)}<span> in</span></div>
-        </div>
-        <div class="rain-card">
-          <div class="card-label">YTD ${new Date().getFullYear()}</div>
-          <div class="record-value">${ytdRain}<span> in</span></div>
-        </div>
+      <div id="explorer-results"></div>`;
+    if(explorerCache.rows)renderExplorerResults();
+  }
+  function quickPick(preset){
+    const now=new Date(),y=now.getFullYear(),m=now.getMonth();let start,end;
+    if(preset==='yesterday'){const yd=new Date(now-86400000);start=end=yd.toISOString().split('T')[0];}
+    else if(preset==='7d'){start=new Date(now-7*86400000).toISOString().split('T')[0];end=now.toISOString().split('T')[0];}
+    else if(preset==='30d'){start=new Date(now-30*86400000).toISOString().split('T')[0];end=now.toISOString().split('T')[0];}
+    else if(preset==='thisMonth'){start=new Date(y,m,1).toISOString().split('T')[0];end=now.toISOString().split('T')[0];}
+    else if(preset==='lastMonth'){start=new Date(y,m-1,1).toISOString().split('T')[0];end=new Date(y,m,0).toISOString().split('T')[0];}
+    document.getElementById('start-date').value=start;
+    document.getElementById('end-date').value=end;
+    runExplorer();
+  }
+  async function runExplorer(){
+    const startVal=document.getElementById('start-date').value,endVal=document.getElementById('end-date').value;
+    if(!startVal||!endVal)return;
+    document.getElementById('explorer-results').innerHTML='<div class="loading">Searching...</div>';
+    try{
+      const rows=await fetchRows(new Date(startVal).toISOString(),new Date(endVal+'T23:59:59').toISOString());
+      if(!rows.length){document.getElementById('explorer-results').innerHTML='<div class="error">No data found for this range.</div>';return;}
+      explorerCache={rows,startVal,endVal};renderExplorerResults();
+    }catch(err){document.getElementById('explorer-results').innerHTML=`<div class="error">${err.message}</div>`;}
+  }
+  function renderExplorerResults(){
+    const{rows,startVal,endVal}=explorerCache;const stats=computeRangeStats(rows);
+    const days=Math.max(1,Math.round((new Date(endVal)-new Date(startVal))/86400000)+1);
+    const label=startVal===endVal?formatDate(startVal):`${formatDate(startVal)} — ${formatDate(endVal)} (${days} days)`;
+    document.getElementById('explorer-results').innerHTML=`
+      <div class="section-label">${label}</div>
+      <div class="cards-grid">
+        <div class="card"><div class="card-label">High Temp</div><div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.hot?formatDate(stats.hot.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Low Temp</div><div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.cold?formatDate(stats.cold.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Avg Temp</div><div class="card-value">${fmt(stats.avgTemp,1)}<span>°F</span></div><div class="card-sub">Avg humidity: ${fmt(stats.avgHumidity,0)}%</div></div>
+        <div class="card"><div class="card-label">Total Rain</div><div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div><div class="card-sub">Max rate: ${fmt(stats.maxRainRate,2)} in/hr</div></div>
+        <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
+      <div class="section-label">Temperature & Rainfall</div>
+      <div class="chart-card"><div class="chart-wrap"><canvas id="explorerChart"></canvas></div></div>`;
+    renderExplorerChart(rows);
+  }
+  function renderExplorerChart(rows){
+    if(charts.explorer)charts.explorer.destroy();
+    const rangeDays=Math.max(1,Math.round((new Date(explorerCache.endVal)-new Date(explorerCache.startVal))/86400000)+1);
+    const labels=rows.map(r=>formatTime(r.recorded_at,rangeDays));
+    const s=getComputedStyle(document.documentElement),d=getChartDefaults();
+    charts.explorer=new Chart(document.getElementById('explorerChart'),{type:'line',data:{labels,datasets:[
+      {label:'Temp',data:rows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true,yAxisID:'y'},
+      {label:'Rain',data:rows.map(r=>r.rain_hourly),borderColor:s.getPropertyValue('--chart-rain').trim(),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderWidth:1,pointRadius:0,type:'bar',yAxisID:'y1'}
+    ]},options:{...d,scales:{x:d.scales.x,y:{...d.scales.y,position:'left',ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}},y1:{...d.scales.y,position:'right',grid:{drawOnChartArea:false},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+  }
 
+  // MONTHLY TAB
+  async function loadMonthlyTab(){
+    const tc=document.getElementById('tab-content');
+    if(monthlyCache.data){renderMonthlyTab();return;}
+    tc.innerHTML='<div class="loading">Loading monthly data...</div>';
+    try{
+      const base=`${SUPABASE_URL}/rest/v1/weather_data`,year=new Date().getFullYear(),cm=new Date().getMonth();
+      const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const fetches=[];
+      for(let m=0;m<=Math.min(cm,11);m++){
+        const start=new Date(year,m,1).toISOString(),end=new Date(year,m+1,1).toISOString();
+        fetches.push(Promise.all([
+          fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&order=recorded_at.desc&limit=1`,{headers:H}).then(r=>r.json()),
+          fetch(`${base}?select=temp_outdoor&temp_outdoor=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&order=temp_outdoor.desc.nullslast&limit=1`,{headers:H}).then(r=>r.json()),
+          fetch(`${base}?select=temp_outdoor&temp_outdoor=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&order=temp_outdoor.asc.nullslast&limit=1`,{headers:H}).then(r=>r.json()),
+          fetch(`${base}?select=temp_outdoor&temp_outdoor=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&limit=500`,{headers:H}).then(r=>r.json()),
+        ]));
+      }
+      const results=await Promise.all(fetches);
+      const data=results.map((r,i)=>{const[rainRes,highRes,lowRes,tempsRes]=r;return{month:monthNames[i],rain:rainRes[0]?.rain_monthly??null,high:highRes[0]?.temp_outdoor??null,low:lowRes[0]?.temp_outdoor??null,avgTemp:tempsRes.length?tempsRes.reduce((s,t)=>s+t.temp_outdoor,0)/tempsRes.length:null};});
+      monthlyCache={data,year};renderMonthlyTab();
+    }catch(err){tc.innerHTML=`<div class="error">${err.message}</div>`;}
+  }
+  function renderMonthlyTab(){
+    const{data,year}=monthlyCache;
+    const tableRows=data.map(d=>`<tr><td>${d.month}</td><td>${fmt(d.rain,2)}</td><td>${fmt(d.avgTemp,1)}</td><td>${fmt(d.high,1)}</td><td>${fmt(d.low,1)}</td></tr>`).join('');
+    document.getElementById('tab-content').innerHTML=`
+      <div class="section-label">Monthly Overview — ${year}</div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Monthly Precipitation</div></div><div class="chart-wrap"><canvas id="monthlyRainChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Monthly Temperature</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>High</div><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind)"></div>Low</div></div></div><div class="chart-wrap"><canvas id="monthlyTempChart"></canvas></div></div>
+      </div>
+      <div class="monthly-table-wrap"><table class="monthly-table">
+        <thead><tr><th>Month</th><th>Rain (in)</th><th>Avg Temp (°F)</th><th>High (°F)</th><th>Low (°F)</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table></div>`;
+    renderMonthlyCharts(data);
+  }
+  function renderMonthlyCharts(data){
+    if(charts.monthlyRain)charts.monthlyRain.destroy();if(charts.monthlyTemp)charts.monthlyTemp.destroy();
+    const labels=data.map(d=>d.month),s=getComputedStyle(document.documentElement),d=getChartDefaults();
+    charts.monthlyRain=new Chart(document.getElementById('monthlyRainChart'),{type:'bar',data:{labels,datasets:[{label:'Rain',data:data.map(d=>d.rain),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderColor:s.getPropertyValue('--chart-rain').trim(),borderWidth:1,borderRadius:4}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+    charts.monthlyTemp=new Chart(document.getElementById('monthlyTempChart'),{type:'line',data:{labels,datasets:[
+      {label:'High',data:data.map(d=>d.high),borderColor:s.getPropertyValue('--red').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
+      {label:'Avg',data:data.map(d=>d.avgTemp),borderColor:s.getPropertyValue('--accent').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
+      {label:'Low',data:data.map(d=>d.low),borderColor:s.getPropertyValue('--chart-wind').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false}
+    ]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
+  }
+
+  // RECORDS TAB
+  async function loadRecordsTab(){
+    const tc=document.getElementById('tab-content');
+    if(recordsCache.records){renderRecordsTab();return;}
+    tc.innerHTML='<div class="loading">Loading records...</div>';
+    try{
+      const[records,ytd]=await Promise.all([fetchRecords(),fetchYTD()]);
+      const latestRes=await fetch(`${SUPABASE_URL}/rest/v1/weather_data?order=recorded_at.desc&limit=1`,{headers:H});
+      const latest=(await latestRes.json())[0];
+      recordsCache={records,ytd,latest};renderRecordsTab();
+    }catch(err){tc.innerHTML=`<div class="error">${err.message}</div>`;}
+  }
+  function renderRecordsTab(){
+    const{records,ytd,latest}=recordsCache;
+    document.getElementById('tab-content').innerHTML=`
       <div class="section-label">All-Time Records</div>
       <div class="records-grid">
-        <div class="record-card">
-          <div class="card-label">Hottest</div>
-          <div class="record-value">${fmt(allTimeRecords.hot?.temp_outdoor,1)}<span>°F</span></div>
-          <div class="record-date">${allTimeRecords.hot ? formatDate(allTimeRecords.hot.recorded_at) : '--'}</div>
-        </div>
-        <div class="record-card">
-          <div class="card-label">Coldest</div>
-          <div class="record-value">${fmt(allTimeRecords.cold?.temp_outdoor,1)}<span>°F</span></div>
-          <div class="record-date">${allTimeRecords.cold ? formatDate(allTimeRecords.cold.recorded_at) : '--'}</div>
-        </div>
-        <div class="record-card">
-          <div class="card-label">Rainiest Day</div>
-          <div class="record-value">${fmt(allTimeRecords.rain?.rain_daily,2)}<span> in</span></div>
-          <div class="record-date">${allTimeRecords.rain ? formatDate(allTimeRecords.rain.recorded_at) : '--'}</div>
-        </div>
-        <div class="record-card">
-          <div class="card-label">Strongest Gust</div>
-          <div class="record-value">${fmt(allTimeRecords.gust?.wind_gust,1)}<span> mph</span></div>
-          <div class="record-date">${allTimeRecords.gust ? formatDate(allTimeRecords.gust.recorded_at) : '--'}</div>
-        </div>
+        <div class="record-card"><div class="card-label">Hottest</div><div class="record-value">${fmt(records.hot?.temp_outdoor,1)}<span>°F</span></div><div class="record-date">${records.hot?formatDate(records.hot.recorded_at):'--'}</div></div>
+        <div class="record-card"><div class="card-label">Coldest</div><div class="record-value">${fmt(records.cold?.temp_outdoor,1)}<span>°F</span></div><div class="record-date">${records.cold?formatDate(records.cold.recorded_at):'--'}</div></div>
+        <div class="record-card"><div class="card-label">Rainiest Day</div><div class="record-value">${fmt(records.rain?.rain_daily,2)}<span> in</span></div><div class="record-date">${records.rain?formatDate(records.rain.recorded_at):'--'}</div></div>
+        <div class="record-card"><div class="card-label">Strongest Gust</div><div class="record-value">${fmt(records.gust?.wind_gust,1)}<span> mph</span></div><div class="record-date">${records.gust?formatDate(records.gust.recorded_at):'--'}</div></div>
       </div>
-
-      <div class="section-label">Charts — Last ${rangeLabel}</div>
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Temperature</div>
-            <div class="chart-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div>
-              <div class="legend-item"><div class="legend-dot" style="background:var(--chart-feels)"></div>Feels Like</div>
-            </div>
-          </div>
-          <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Rainfall</div>
-            <div class="chart-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Hourly</div>
-              <div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Daily Total</div>
-            </div>
-          </div>
-          <div class="chart-wrap"><canvas id="rainChart"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Wind</div>
-            <div class="chart-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind)"></div>Speed</div>
-              <div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind-light)"></div>Gust</div>
-            </div>
-          </div>
-          <div class="chart-wrap"><canvas id="windChart"></canvas></div>
-        </div>
-      </div>
-    `;
-
-    renderCharts(rows);
+      <div class="section-label">Rainfall Totals</div>
+      <div class="rain-grid">
+        <div class="rain-card"><div class="card-label">Today</div><div class="record-value">${fmt(latest?.rain_daily,2)}<span> in</span></div><div class="record-date">Last hour: ${fmt(latest?.rain_hourly,2)} in</div></div>
+        <div class="rain-card"><div class="card-label">This Week</div><div class="record-value">${fmt(latest?.rain_weekly,2)}<span> in</span></div></div>
+        <div class="rain-card"><div class="card-label">This Month</div><div class="record-value">${fmt(latest?.rain_monthly,2)}<span> in</span></div></div>
+        <div class="rain-card"><div class="card-label">YTD ${new Date().getFullYear()}</div><div class="record-value">${ytd}<span> in</span></div></div>
+      </div>`;
   }
 
-  function renderCharts(rows) {
-    Object.values(charts).forEach(c => c.destroy());
-    charts = {};
-    const labels = rows.map(r => formatTime(r.recorded_at, currentRange));
-    const style = getComputedStyle(document.documentElement);
-    const defaults = getChartDefaults();
-
-    charts.temp = new Chart(document.getElementById('tempChart'), {
-      type: 'line',
-      data: { labels, datasets: [
-        { label: 'Temperature', data: rows.map(r => r.temp_outdoor),
-          borderColor: style.getPropertyValue('--chart-temp').trim(),
-          backgroundColor: style.getPropertyValue('--chart-fill').trim(),
-          borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
-        { label: 'Feels Like', data: rows.map(r => r.feels_like),
-          borderColor: style.getPropertyValue('--chart-feels').trim(),
-          borderWidth: 1.5, pointRadius: 0, tension: 0.4, borderDash: [4,3], fill: false }
-      ]},
-      options: { ...defaults, scales: { ...defaults.scales,
-        y: { ...defaults.scales.y, ticks: { ...defaults.scales.y.ticks, callback: v => v + '°F' }}}}
-    });
-
-    charts.rain = new Chart(document.getElementById('rainChart'), {
-      type: 'bar',
-      data: { labels, datasets: [
-        { label: 'Hourly Rain', data: rows.map(r => r.rain_hourly),
-          backgroundColor: style.getPropertyValue('--chart-rain-light').trim(), borderRadius: 2 },
-        { label: 'Daily Total', data: rows.map(r => r.rain_daily),
-          backgroundColor: style.getPropertyValue('--chart-rain-bg').trim(),
-          borderColor: style.getPropertyValue('--chart-rain').trim(),
-          borderWidth: 1, type: 'line', pointRadius: 0, tension: 0.4, fill: false }
-      ]},
-      options: { ...defaults, scales: { ...defaults.scales,
-        y: { ...defaults.scales.y, ticks: { ...defaults.scales.y.ticks, callback: v => v + '"' }}}}
-    });
-
-    charts.wind = new Chart(document.getElementById('windChart'), {
-      type: 'line',
-      data: { labels, datasets: [
-        { label: 'Wind Speed', data: rows.map(r => r.wind_speed),
-          borderColor: style.getPropertyValue('--chart-wind').trim(),
-          backgroundColor: style.getPropertyValue('--chart-wind-fill').trim(),
-          borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
-        { label: 'Wind Gust', data: rows.map(r => r.wind_gust),
-          borderColor: style.getPropertyValue('--chart-wind-light').trim(),
-          borderWidth: 1.5, pointRadius: 0, tension: 0.4, borderDash: [4,3], fill: false }
-      ]},
-      options: { ...defaults, scales: { ...defaults.scales,
-        y: { ...defaults.scales.y, ticks: { ...defaults.scales.y.ticks, callback: v => v + ' mph' }}}}
-    });
-  }
-
-  loadData();
-  setInterval(loadData, 5 * 60 * 1000);
+  // INIT
+  loadLiveTab();
+  setInterval(()=>{if(activeTab==='live')loadLiveTab();},5*60*1000);
 </script>
 </body>
 </html>
