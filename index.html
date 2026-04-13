@@ -464,6 +464,62 @@
     return new Date(ts).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'});
   }
 
+  function computeRangeStats(rows) {
+    const valid = (arr, key) => arr.filter(r => r[key] != null);
+
+    const temps = valid(rows, 'temp_outdoor');
+    const winds = valid(rows, 'wind_speed');
+    const gusts = valid(rows, 'wind_gust');
+    const rains = valid(rows, 'rain_hourly');
+
+    // High/low temp with timestamps
+    let hotRow = null, coldRow = null;
+    for (const r of temps) {
+      if (!hotRow || r.temp_outdoor > hotRow.temp_outdoor) hotRow = r;
+      if (!coldRow || r.temp_outdoor < coldRow.temp_outdoor) coldRow = r;
+    }
+
+    // Max gust with timestamp
+    let gustRow = null;
+    for (const r of gusts) {
+      if (!gustRow || r.wind_gust > gustRow.wind_gust) gustRow = r;
+    }
+
+    // Max rain_daily with timestamp (rainiest day in range)
+    let rainRow = null;
+    for (const r of valid(rows, 'rain_daily')) {
+      if (!rainRow || r.rain_daily > rainRow.rain_daily) rainRow = r;
+    }
+
+    // Averages
+    const avgTemp = temps.length ? temps.reduce((s,r) => s + r.temp_outdoor, 0) / temps.length : null;
+    const avgWind = winds.length ? winds.reduce((s,r) => s + r.wind_speed, 0) / winds.length : null;
+    const avgHumidity = valid(rows, 'humidity_outdoor').length ?
+      valid(rows, 'humidity_outdoor').reduce((s,r) => s + r.humidity_outdoor, 0) / valid(rows, 'humidity_outdoor').length : null;
+
+    // Total rain: sum max rain_daily per calendar day
+    const dailyMaxRain = {};
+    for (const r of valid(rows, 'rain_daily')) {
+      const day = r.recorded_at.substring(0, 10);
+      if (!dailyMaxRain[day] || r.rain_daily > dailyMaxRain[day]) {
+        dailyMaxRain[day] = r.rain_daily;
+      }
+    }
+    const totalRain = Object.values(dailyMaxRain).reduce((s,v) => s + v, 0);
+
+    // Max hourly rain rate
+    let maxRainRate = 0;
+    for (const r of rains) {
+      if (r.rain_hourly > maxRainRate) maxRainRate = r.rain_hourly;
+    }
+
+    return {
+      hot: hotRow, cold: coldRow, gustRow, rainRow,
+      avgTemp, avgWind, avgHumidity,
+      totalRain, maxRainRate
+    };
+  }
+
   const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
 
   async function fetchRows(since) {
@@ -528,7 +584,7 @@
 
     try {
       const since = new Date(Date.now() - currentRange * 86400000).toISOString();
-      const [rows, records, ytdRain] = await Promise.all([fetchRows(since), fetchRecords(), fetchYTD()]);
+      const [rows, allTimeRecords, ytdRain] = await Promise.all([fetchRows(since), fetchRecords(), fetchYTD()]);
 
       if (!rows.length) throw new Error('No data found for this time range.');
 
@@ -536,8 +592,9 @@
       document.getElementById('last-updated').textContent =
         `Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
 
+      const rangeStats = computeRangeStats(rows);
       lastRows = rows;
-      renderDashboard(rows, latest, records, ytdRain);
+      renderDashboard(rows, latest, allTimeRecords, ytdRain, rangeStats);
 
     } catch (err) {
       document.getElementById('error-box').innerHTML = `<div class="error">${err.message}</div>`;
@@ -545,7 +602,7 @@
     }
   }
 
-  function renderDashboard(rows, latest, records, ytdRain) {
+  function renderDashboard(rows, latest, allTimeRecords, ytdRain, stats) {
     const rangeLabel = currentRange === 1 ? '24 Hours' : currentRange === 7 ? '7 Days' : currentRange === 30 ? '30 Days' : '12 Months';
 
     document.getElementById('main-content').innerHTML = `
@@ -583,7 +640,41 @@
         </div>
       </div>
 
-      <div class="section-label">Rainfall Summary</div>
+      <div class="section-label">${rangeLabel} Summary</div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-label">High Temp</div>
+          <div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div>
+          <div class="card-sub">${stats.hot ? formatDate(stats.hot.recorded_at) : '--'}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Low Temp</div>
+          <div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div>
+          <div class="card-sub">${stats.cold ? formatDate(stats.cold.recorded_at) : '--'}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Avg Temp</div>
+          <div class="card-value">${fmt(stats.avgTemp,1)}<span>°F</span></div>
+          <div class="card-sub">Avg humidity: ${fmt(stats.avgHumidity,0)}%</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Total Rain</div>
+          <div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div>
+          <div class="card-sub">Max rate: ${fmt(stats.maxRainRate,2)} in/hr</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Max Gust</div>
+          <div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div>
+          <div class="card-sub">${stats.gustRow ? formatDate(stats.gustRow.recorded_at) : '--'}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Avg Wind</div>
+          <div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div>
+          <div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div>
+        </div>
+      </div>
+
+      <div class="section-label">Rainfall</div>
       <div class="rain-grid">
         <div class="rain-card">
           <div class="card-label">Today</div>
@@ -607,24 +698,24 @@
       <div class="section-label">All-Time Records</div>
       <div class="records-grid">
         <div class="record-card">
-          <div class="card-label">Hottest Reading</div>
-          <div class="record-value">${fmt(records.hot?.temp_outdoor,1)}<span>°F</span></div>
-          <div class="record-date">${records.hot ? formatDate(records.hot.recorded_at) : '--'}</div>
+          <div class="card-label">Hottest</div>
+          <div class="record-value">${fmt(allTimeRecords.hot?.temp_outdoor,1)}<span>°F</span></div>
+          <div class="record-date">${allTimeRecords.hot ? formatDate(allTimeRecords.hot.recorded_at) : '--'}</div>
         </div>
         <div class="record-card">
-          <div class="card-label">Coldest Reading</div>
-          <div class="record-value">${fmt(records.cold?.temp_outdoor,1)}<span>°F</span></div>
-          <div class="record-date">${records.cold ? formatDate(records.cold.recorded_at) : '--'}</div>
+          <div class="card-label">Coldest</div>
+          <div class="record-value">${fmt(allTimeRecords.cold?.temp_outdoor,1)}<span>°F</span></div>
+          <div class="record-date">${allTimeRecords.cold ? formatDate(allTimeRecords.cold.recorded_at) : '--'}</div>
         </div>
         <div class="record-card">
           <div class="card-label">Rainiest Day</div>
-          <div class="record-value">${fmt(records.rain?.rain_daily,2)}<span> in</span></div>
-          <div class="record-date">${records.rain ? formatDate(records.rain.recorded_at) : '--'}</div>
+          <div class="record-value">${fmt(allTimeRecords.rain?.rain_daily,2)}<span> in</span></div>
+          <div class="record-date">${allTimeRecords.rain ? formatDate(allTimeRecords.rain.recorded_at) : '--'}</div>
         </div>
         <div class="record-card">
           <div class="card-label">Strongest Gust</div>
-          <div class="record-value">${fmt(records.gust?.wind_gust,1)}<span> mph</span></div>
-          <div class="record-date">${records.gust ? formatDate(records.gust.recorded_at) : '--'}</div>
+          <div class="record-value">${fmt(allTimeRecords.gust?.wind_gust,1)}<span> mph</span></div>
+          <div class="record-date">${allTimeRecords.gust ? formatDate(allTimeRecords.gust.recorded_at) : '--'}</div>
         </div>
       </div>
 
