@@ -24,6 +24,8 @@ if not data:
     print("No data returned from AWN")
     exit(0)
 
+print(f"Raw AWN data: {data}")
+
 reading = data[0]
 last_data = reading.get("lastData", {})
 
