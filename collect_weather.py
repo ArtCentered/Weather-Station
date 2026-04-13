@@ -60,5 +60,6 @@ record = {
 
 # Save to Supabase
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase.postgrest.schema("public")
 result = supabase.table("weather_data").upsert(record, on_conflict="recorded_at").execute()
 print(f"Saved reading for {recorded_at}")
