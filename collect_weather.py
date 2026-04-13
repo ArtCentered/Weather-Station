@@ -27,7 +27,7 @@ if not data:
 print(f"Raw AWN data: {data}")
 
 reading = data[0]
-last_data = reading.get("lastData", {})
+last_data = reading
 
 # Parse timestamp
 ts = last_data.get("dateutc")
