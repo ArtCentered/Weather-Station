@@ -453,10 +453,10 @@
   async function fetchRecords() {
     const base = `${SUPABASE_URL}/rest/v1/weather_data`;
     const [hotR, coldR, rainR, gustR] = await Promise.all([
-      fetch(`${base}?select=temp_outdoor,recorded_at&order=temp_outdoor.desc&limit=1`, {headers:H}),
-      fetch(`${base}?select=temp_outdoor,recorded_at&order=temp_outdoor.asc&limit=1`,  {headers:H}),
-      fetch(`${base}?select=rain_daily,recorded_at&order=rain_daily.desc&limit=1`,     {headers:H}),
-      fetch(`${base}?select=wind_gust,recorded_at&order=wind_gust.desc&limit=1`,       {headers:H}),
+      fetch(`${base}?select=temp_outdoor,recorded_at&temp_outdoor=not.is.null&order=temp_outdoor.desc.nullslast&limit=1`, {headers:H}),
+      fetch(`${base}?select=temp_outdoor,recorded_at&temp_outdoor=not.is.null&order=temp_outdoor.asc.nullslast&limit=1`,  {headers:H}),
+      fetch(`${base}?select=rain_daily,recorded_at&rain_daily=not.is.null&order=rain_daily.desc.nullslast&limit=1`,     {headers:H}),
+      fetch(`${base}?select=wind_gust,recorded_at&wind_gust=not.is.null&order=wind_gust.desc.nullslast&limit=1`,       {headers:H}),
     ]);
     const [hot, cold, rain, gust] = await Promise.all([hotR.json(), coldR.json(), rainR.json(), gustR.json()]);
     return { hot: hot[0], cold: cold[0], rain: rain[0], gust: gust[0] };
@@ -466,8 +466,8 @@
     const jan1 = new Date(new Date().getFullYear(), 0, 1).toISOString();
     const base = `${SUPABASE_URL}/rest/v1/weather_data`;
     const [latestR, jan1R] = await Promise.all([
-      fetch(`${base}?select=rain_total&order=recorded_at.desc&limit=1`, {headers:H}),
-      fetch(`${base}?select=rain_total&recorded_at=gte.${jan1}&order=recorded_at.asc&limit=1`, {headers:H}),
+      fetch(`${base}?select=rain_total&rain_total=not.is.null&order=recorded_at.desc&limit=1`, {headers:H}),
+      fetch(`${base}?select=rain_total&rain_total=not.is.null&recorded_at=gte.${jan1}&order=recorded_at.asc&limit=1`, {headers:H}),
     ]);
     const [latest, jan1data] = await Promise.all([latestR.json(), jan1R.json()]);
     if (latest[0]?.rain_total != null && jan1data[0]?.rain_total != null) {
