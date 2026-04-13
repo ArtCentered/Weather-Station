@@ -463,17 +463,34 @@
   }
 
   async function fetchYTD() {
-    const jan1 = new Date(new Date().getFullYear(), 0, 1).toISOString();
+    // Sum peak rain_monthly from the last day of each completed month + current month
     const base = `${SUPABASE_URL}/rest/v1/weather_data`;
-    const [latestR, jan1R] = await Promise.all([
-      fetch(`${base}?select=rain_total&rain_total=not.is.null&order=recorded_at.desc&limit=1`, {headers:H}),
-      fetch(`${base}?select=rain_total&rain_total=not.is.null&recorded_at=gte.${jan1}&order=recorded_at.asc&limit=1`, {headers:H}),
-    ]);
-    const [latest, jan1data] = await Promise.all([latestR.json(), jan1R.json()]);
-    if (latest[0]?.rain_total != null && jan1data[0]?.rain_total != null) {
-      return (latest[0].rain_total - jan1data[0].rain_total).toFixed(2);
+    const year = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // 0-indexed
+    let ytd = 0;
+
+    // For each completed month, get the max rain_monthly (last reading of that month)
+    const fetches = [];
+    for (let m = 0; m < currentMonth; m++) {
+      const start = new Date(year, m, 1).toISOString();
+      const end = new Date(year, m + 1, 1).toISOString();
+      fetches.push(
+        fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&order=recorded_at.desc&limit=1`, {headers:H})
+          .then(r => r.json())
+      );
     }
-    return '--';
+    // Current month's rain_monthly from latest reading
+    const curStart = new Date(year, currentMonth, 1).toISOString();
+    fetches.push(
+      fetch(`${base}?select=rain_monthly&rain_monthly=not.is.null&recorded_at=gte.${curStart}&order=recorded_at.desc&limit=1`, {headers:H})
+        .then(r => r.json())
+    );
+
+    const results = await Promise.all(fetches);
+    for (const res of results) {
+      if (res[0]?.rain_monthly != null) ytd += res[0].rain_monthly;
+    }
+    return ytd > 0 ? ytd.toFixed(2) : '--';
   }
 
   async function loadData() {
@@ -506,13 +523,13 @@
       <div class="cards-grid">
         <div class="card">
           <div class="card-label">Temperature</div>
-          <div class="card-value">${fmt(latest.temp_outdoor)}<span>°F</span></div>
-          <div class="card-sub">Indoor: ${fmt(latest.temp_indoor)}°F</div>
+          <div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div>
+          <div class="card-sub">Indoor: ${fmt(latest.temp_indoor,1)}°F</div>
         </div>
         <div class="card">
           <div class="card-label">Feels Like</div>
-          <div class="card-value">${fmt(latest.feels_like)}<span>°F</span></div>
-          <div class="card-sub">Dew point: ${fmt(latest.dew_point)}°F</div>
+          <div class="card-value">${fmt(latest.feels_like,1)}<span>°F</span></div>
+          <div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div>
         </div>
         <div class="card">
           <div class="card-label">Humidity</div>
@@ -521,18 +538,18 @@
         </div>
         <div class="card">
           <div class="card-label">Wind</div>
-          <div class="card-value">${fmt(latest.wind_speed)}<span>mph</span></div>
-          <div class="card-sub">Gust: ${fmt(latest.wind_gust)} mph<br>${windDir(latest.wind_direction)}</div>
+          <div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div>
+          <div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div>
         </div>
         <div class="card">
           <div class="card-label">UV Index</div>
           <div class="card-value">${latest.uv_index ?? '--'}</div>
-          <div class="card-sub">Solar: ${fmt(latest.solar_radiation)} W/m²</div>
+          <div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div>
         </div>
         <div class="card">
           <div class="card-label">Pressure</div>
-          <div class="card-value">${fmt(latest.pressure_relative)}<span>in</span></div>
-          <div class="card-sub">Absolute: ${fmt(latest.pressure_absolute)} in</div>
+          <div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div>
+          <div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div>
         </div>
       </div>
 
@@ -540,21 +557,20 @@
       <div class="rain-grid">
         <div class="rain-card">
           <div class="card-label">Today</div>
-          <div class="record-value">${fmt(latest.rain_daily)}<span> in</span></div>
-          <div class="record-date">Last hour: ${fmt(latest.rain_hourly)} in</div>
+          <div class="record-value">${fmt(latest.rain_daily,2)}<span> in</span></div>
+          <div class="record-date">Last hour: ${fmt(latest.rain_hourly,2)} in</div>
         </div>
         <div class="rain-card">
           <div class="card-label">This Week</div>
-          <div class="record-value">${fmt(latest.rain_weekly)}<span> in</span></div>
+          <div class="record-value">${fmt(latest.rain_weekly,2)}<span> in</span></div>
         </div>
         <div class="rain-card">
           <div class="card-label">This Month</div>
-          <div class="record-value">${fmt(latest.rain_monthly)}<span> in</span></div>
+          <div class="record-value">${fmt(latest.rain_monthly,2)}<span> in</span></div>
         </div>
         <div class="rain-card">
           <div class="card-label">YTD ${new Date().getFullYear()}</div>
           <div class="record-value">${ytdRain}<span> in</span></div>
-          <div class="record-date">All-time total: ${fmt(latest.rain_total)} in</div>
         </div>
       </div>
 
@@ -562,22 +578,22 @@
       <div class="records-grid">
         <div class="record-card">
           <div class="card-label">Hottest Reading</div>
-          <div class="record-value">${fmt(records.hot?.temp_outdoor)}<span>°F</span></div>
+          <div class="record-value">${fmt(records.hot?.temp_outdoor,1)}<span>°F</span></div>
           <div class="record-date">${records.hot ? formatDate(records.hot.recorded_at) : '--'}</div>
         </div>
         <div class="record-card">
           <div class="card-label">Coldest Reading</div>
-          <div class="record-value">${fmt(records.cold?.temp_outdoor)}<span>°F</span></div>
+          <div class="record-value">${fmt(records.cold?.temp_outdoor,1)}<span>°F</span></div>
           <div class="record-date">${records.cold ? formatDate(records.cold.recorded_at) : '--'}</div>
         </div>
         <div class="record-card">
           <div class="card-label">Rainiest Day</div>
-          <div class="record-value">${fmt(records.rain?.rain_daily)}<span> in</span></div>
+          <div class="record-value">${fmt(records.rain?.rain_daily,2)}<span> in</span></div>
           <div class="record-date">${records.rain ? formatDate(records.rain.recorded_at) : '--'}</div>
         </div>
         <div class="record-card">
           <div class="card-label">Strongest Gust</div>
-          <div class="record-value">${fmt(records.gust?.wind_gust)}<span> mph</span></div>
+          <div class="record-value">${fmt(records.gust?.wind_gust,1)}<span> mph</span></div>
           <div class="record-date">${records.gust ? formatDate(records.gust.recorded_at) : '--'}</div>
         </div>
       </div>
