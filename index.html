@@ -8,18 +8,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0f1a;
-    --surface: #111827;
-    --surface2: #1a2234;
-    --border: #1e2d45;
-    --accent: #38bdf8;
-    --accent2: #f59e0b;
-    --accent3: #34d399;
-    --text: #e2e8f0;
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f5;
+    --border: #e2e6ec;
+    --accent: #2563eb;
+    --accent2: #d97706;
+    --accent3: #059669;
+    --text: #1e293b;
     --muted: #64748b;
-    --rain: #818cf8;
-    --wind: #34d399;
-    --feels: #f59e0b;
+    --rain: #6366f1;
+    --wind: #059669;
+    --feels: #d97706;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,8 +37,8 @@
     position: fixed;
     top: -50%; left: -50%;
     width: 200%; height: 200%;
-    background: radial-gradient(ellipse at 20% 20%, rgba(56,189,248,0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(52,211,153,0.04) 0%, transparent 50%);
+    background: radial-gradient(ellipse at 20% 20%, rgba(37,99,235,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(5,150,105,0.03) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
   }
@@ -75,8 +75,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: rgba(52,211,153,0.1);
-    border: 1px solid rgba(52,211,153,0.3);
+    background: rgba(5,150,105,0.08);
+    border: 1px solid rgba(5,150,105,0.3);
     color: var(--accent3);
     font-size: 11px;
     font-family: 'Space Mono', monospace;
@@ -112,7 +112,7 @@
   }
 
   .time-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .time-btn.active { background: rgba(56,189,248,0.1); border-color: var(--accent); color: var(--accent); }
+  .time-btn.active { background: rgba(37,99,235,0.08); border-color: var(--accent); color: var(--accent); }
 
   .section-label {
     font-family: 'Space Mono', monospace;
@@ -382,11 +382,11 @@
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#1a2234',
-        borderColor: '#1e2d45',
+        backgroundColor: '#ffffff',
+        borderColor: '#e2e6ec',
         borderWidth: 1,
         titleColor: '#64748b',
-        bodyColor: '#e2e8f0',
+        bodyColor: '#1e293b',
         titleFont: { family: 'Space Mono', size: 10 },
         bodyFont: { family: 'DM Sans', size: 12 },
         padding: 10,
@@ -394,11 +394,11 @@
     },
     scales: {
       x: {
-        grid: { color: 'rgba(30,45,69,0.8)' },
+        grid: { color: 'rgba(226,230,236,0.8)' },
         ticks: { color: '#64748b', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 8 }
       },
       y: {
-        grid: { color: 'rgba(30,45,69,0.8)' },
+        grid: { color: 'rgba(226,230,236,0.8)' },
         ticks: { color: '#64748b', font: { family: 'Space Mono', size: 9 } }
       }
     }
@@ -588,8 +588,8 @@
           <div class="chart-header">
             <div class="chart-title">Temperature</div>
             <div class="chart-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>Actual</div>
-              <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Feels Like</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#2563eb"></div>Actual</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Feels Like</div>
             </div>
           </div>
           <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
@@ -598,8 +598,8 @@
           <div class="chart-header">
             <div class="chart-title">Rainfall</div>
             <div class="chart-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div>Hourly</div>
-              <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Daily Total</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>Hourly</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>Daily Total</div>
             </div>
           </div>
           <div class="chart-wrap"><canvas id="rainChart"></canvas></div>
@@ -608,8 +608,8 @@
           <div class="chart-header">
             <div class="chart-title">Wind</div>
             <div class="chart-legend">
-              <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Speed</div>
-              <div class="legend-item"><div class="legend-dot" style="background:#6ee7b7"></div>Gust</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>Speed</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>Gust</div>
             </div>
           </div>
           <div class="chart-wrap"><canvas id="windChart"></canvas></div>
@@ -629,10 +629,10 @@
       type: 'line',
       data: { labels, datasets: [
         { label: 'Temperature', data: rows.map(r => r.temp_outdoor),
-          borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.06)',
+          borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)',
           borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
         { label: 'Feels Like', data: rows.map(r => r.feels_like),
-          borderColor: '#f59e0b', borderWidth: 1.5, pointRadius: 0,
+          borderColor: '#d97706', borderWidth: 1.5, pointRadius: 0,
           tension: 0.4, borderDash: [4,3], fill: false }
       ]},
       options: { ...chartDefaults, scales: { ...chartDefaults.scales,
@@ -643,9 +643,9 @@
       type: 'bar',
       data: { labels, datasets: [
         { label: 'Hourly Rain', data: rows.map(r => r.rain_hourly),
-          backgroundColor: 'rgba(129,140,248,0.7)', borderRadius: 2 },
+          backgroundColor: 'rgba(99,102,241,0.6)', borderRadius: 2 },
         { label: 'Daily Total', data: rows.map(r => r.rain_daily),
-          backgroundColor: 'rgba(167,139,250,0.15)', borderColor: 'rgba(167,139,250,0.5)',
+          backgroundColor: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.5)',
           borderWidth: 1, type: 'line', pointRadius: 0, tension: 0.4, fill: false }
       ]},
       options: { ...chartDefaults, scales: { ...chartDefaults.scales,
@@ -656,10 +656,10 @@
       type: 'line',
       data: { labels, datasets: [
         { label: 'Wind Speed', data: rows.map(r => r.wind_speed),
-          borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)',
+          borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.08)',
           borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
         { label: 'Wind Gust', data: rows.map(r => r.wind_gust),
-          borderColor: '#6ee7b7', borderWidth: 1.5, pointRadius: 0,
+          borderColor: '#10b981', borderWidth: 1.5, pointRadius: 0,
           tension: 0.4, borderDash: [4,3], fill: false }
       ]},
       options: { ...chartDefaults, scales: { ...chartDefaults.scales,
