@@ -1,6 +1,5 @@
 import os
 import requests
-from supabase import create_client
 from datetime import datetime, timezone
 
 # Credentials from environment
@@ -58,8 +57,15 @@ record = {
     "humidity_indoor": last_data.get("humidityin"),
 }
 
-# Save to Supabase
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-supabase.postgrest.schema("public")
-result = supabase.table("weather_data").upsert(record, on_conflict="recorded_at").execute()
+# Save directly to Supabase REST API
+headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "resolution=merge-duplicates"
+}
+
+rest_url = f"{SUPABASE_URL}/rest/v1/weather_data"
+result = requests.post(rest_url, json=record, headers=headers)
+result.raise_for_status()
 print(f"Saved reading for {recorded_at}")
