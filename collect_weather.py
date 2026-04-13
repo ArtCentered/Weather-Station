@@ -66,6 +66,9 @@ headers = {
 }
 
 rest_url = f"{SUPABASE_URL}/rest/v1/weather_data"
+print(f"Connecting to: {rest_url}")
 result = requests.post(rest_url, json=record, headers=headers)
+print(f"Status code: {result.status_code}")
+print(f"Response body: {result.text}")
 result.raise_for_status()
 print(f"Saved reading for {recorded_at}")
