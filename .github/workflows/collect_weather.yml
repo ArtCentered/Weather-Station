@@ -17,7 +17,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests supabase
+        run: pip install requests
 
       - name: Run collector
         env:
