@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Station — Eugene, OR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1a;
+    --surface: #111827;
+    --surface2: #1a2234;
+    --border: #1e2d45;
+    --accent: #38bdf8;
+    --accent2: #f59e0b;
+    --accent3: #34d399;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --rain: #818cf8;
+    --wind: #34d399;
+    --feels: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(56,189,248,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(52,211,153,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .station-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(52,211,153,0.1);
+    border: 1px solid rgba(52,211,153,0.3);
+    color: var(--accent3);
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--accent3);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .time-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .time-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .time-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .time-btn.active { background: rgba(56,189,248,0.1); border-color: var(--accent); color: var(--accent); }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 28px 0 12px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--accent));
+    opacity: 0.7;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:nth-child(1){animation-delay:.05s;--card-accent:var(--accent)}
+  .card:nth-child(2){animation-delay:.10s;--card-accent:var(--feels)}
+  .card:nth-child(3){animation-delay:.15s;--card-accent:var(--accent3)}
+  .card:nth-child(4){animation-delay:.20s;--card-accent:var(--wind)}
+  .card:nth-child(5){animation-delay:.25s;--card-accent:#a78bfa}
+  .card:nth-child(6){animation-delay:.30s;--card-accent:#94a3b8}
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .card-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .card-value span { font-size: 13px; color: var(--muted); font-weight: 400; }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+
+  .rain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .rain-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .rain-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--rain);
+    opacity: 0.6;
+  }
+
+  .rain-card:nth-child(1){animation-delay:.35s}
+  .rain-card:nth-child(2){animation-delay:.40s}
+  .rain-card:nth-child(3){animation-delay:.45s}
+  .rain-card:nth-child(4){animation-delay:.50s}
+
+  .records-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .record-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .record-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--accent2));
+    opacity: 0.6;
+  }
+
+  .record-card:nth-child(1){animation-delay:.55s;--card-accent:#f87171}
+  .record-card:nth-child(2){animation-delay:.60s;--card-accent:#38bdf8}
+  .record-card:nth-child(3){animation-delay:.65s;--card-accent:#818cf8}
+  .record-card:nth-child(4){animation-delay:.70s;--card-accent:#34d399}
+
+  .record-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    margin-top: 8px;
+  }
+
+  .record-value span { font-size: 12px; color: var(--muted); }
+  .record-date { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  .charts-grid { display: grid; gap: 16px; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chart-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .chart-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .chart-wrap { position: relative; height: 200px; }
+
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .loading::after {
+    content: '';
+    display: block;
+    width: 28px; height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 14px auto 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px;
+    padding: 14px;
+    color: #fca5a5;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 36px;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  #last-updated {
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <div class="station-name">Personal Weather Station — Eugene, OR</div>
+      <h1>Weather Dashboard <span class="live-badge"><span class="live-dot"></span>LIVE</span></h1>
+      <div id="last-updated">Loading...</div>
+    </div>
+    <div class="time-controls">
+      <button class="time-btn active" onclick="setRange(1)"   id="btn-1">24H</button>
+      <button class="time-btn"        onclick="setRange(7)"   id="btn-7">7D</button>
+      <button class="time-btn"        onclick="setRange(30)"  id="btn-30">30D</button>
+      <button class="time-btn"        onclick="setRange(365)" id="btn-365">1Y</button>
+    </div>
+  </header>
+
+  <div id="error-box"></div>
+  <div id="main-content"><div class="loading">LOADING WEATHER DATA</div></div>
+
+  <footer>Eugene, OR &bull; Powered by Ambient Weather Network</footer>
+</div>
+
+<script>
+  // ============================================================
+  // CONFIGURATION — replace with your actual values
+  // ============================================================
+  const SUPABASE_URL = 'https://qafjqqnwnxzeluikjhoz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhZmpxcW53bnh6ZWx1aWtqaG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzY1ODMsImV4cCI6MjA5MTYxMjU4M30.zdqSoeNxSH316m12PcbhNjRoJuWJz6s_klJLvuDuBdE';
+  // ============================================================
+
+  let currentRange = 1;
+  let charts = {};
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a2234',
+        borderColor: '#1e2d45',
+        borderWidth: 1,
+        titleColor: '#64748b',
+        bodyColor: '#e2e8f0',
+        titleFont: { family: 'Space Mono', size: 10 },
+        bodyFont: { family: 'DM Sans', size: 12 },
+        padding: 10,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(30,45,69,0.8)' },
+        ticks: { color: '#64748b', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 8 }
+      },
+      y: {
+        grid: { color: 'rgba(30,45,69,0.8)' },
+        ticks: { color: '#64748b', font: { family: 'Space Mono', size: 9 } }
+      }
+    }
+  };
+
+  function setRange(days) {
+    currentRange = days;
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${days}`).classList.add('active');
+    loadData();
+  }
+
+  function windDir(deg) {
+    if (deg == null) return '--';
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(deg / 22.5) % 16];
+  }
+
+  function formatTime(ts, rangeDays) {
+    const d = new Date(ts);
+    if (rangeDays <= 1)  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    if (rangeDays <= 7)  return d.toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    return d.toLocaleDateString([], {month:'short', day:'numeric'});
+  }
+
+  function fmt(val, dec=1) {
+    return val != null ? Number(val).toFixed(dec) : '--';
+  }
+
+  function formatDate(ts) {
+    return new Date(ts).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'});
+  }
+
+  const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+
+  async function fetchRows(since) {
+    let rows = [], offset = 0;
+    while (true) {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/weather_data?recorded_at=gte.${since}&order=recorded_at.asc&limit=1000&offset=${offset}`,
+        { headers: H }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const page = await res.json();
+      rows = rows.concat(page);
+      if (page.length < 1000) break;
+      offset += 1000;
+    }
+    return rows;
+  }
+
+  async function fetchRecords() {
+    const base = `${SUPABASE_URL}/rest/v1/weather_data`;
+    const [hotR, coldR, rainR, gustR] = await Promise.all([
+      fetch(`${base}?select=temp_outdoor,recorded_at&order=temp_outdoor.desc&limit=1`, {headers:H}),
+      fetch(`${base}?select=temp_outdoor,recorded_at&order=temp_outdoor.asc&limit=1`,  {headers:H}),
+      fetch(`${base}?select=rain_daily,recorded_at&order=rain_daily.desc&limit=1`,     {headers:H}),
+      fetch(`${base}?select=wind_gust,recorded_at&order=wind_gust.desc&limit=1`,       {headers:H}),
+    ]);
+    const [hot, cold, rain, gust] = await Promise.all([hotR.json(), coldR.json(), rainR.json(), gustR.json()]);
+    return { hot: hot[0], cold: cold[0], rain: rain[0], gust: gust[0] };
+  }
+
+  async function fetchYTD() {
+    const jan1 = new Date(new Date().getFullYear(), 0, 1).toISOString();
+    const base = `${SUPABASE_URL}/rest/v1/weather_data`;
+    const [latestR, jan1R] = await Promise.all([
+      fetch(`${base}?select=rain_total&order=recorded_at.desc&limit=1`, {headers:H}),
+      fetch(`${base}?select=rain_total&recorded_at=gte.${jan1}&order=recorded_at.asc&limit=1`, {headers:H}),
+    ]);
+    const [latest, jan1data] = await Promise.all([latestR.json(), jan1R.json()]);
+    if (latest[0]?.rain_total != null && jan1data[0]?.rain_total != null) {
+      return (latest[0].rain_total - jan1data[0].rain_total).toFixed(2);
+    }
+    return '--';
+  }
+
+  async function loadData() {
+    document.getElementById('main-content').innerHTML = '<div class="loading">LOADING WEATHER DATA</div>';
+    document.getElementById('error-box').innerHTML = '';
+
+    try {
+      const since = new Date(Date.now() - currentRange * 86400000).toISOString();
+      const [rows, records, ytdRain] = await Promise.all([fetchRows(since), fetchRecords(), fetchYTD()]);
+
+      if (!rows.length) throw new Error('No data found for this time range.');
+
+      const latest = rows[rows.length - 1];
+      document.getElementById('last-updated').textContent =
+        `Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
+
+      renderDashboard(rows, latest, records, ytdRain);
+
+    } catch (err) {
+      document.getElementById('error-box').innerHTML = `<div class="error">⚠ ${err.message}</div>`;
+      document.getElementById('main-content').innerHTML = '';
+    }
+  }
+
+  function renderDashboard(rows, latest, records, ytdRain) {
+    const rangeLabel = currentRange === 1 ? '24 Hours' : currentRange === 7 ? '7 Days' : currentRange === 30 ? '30 Days' : '12 Months';
+
+    document.getElementById('main-content').innerHTML = `
+      <div class="section-label">Current Conditions</div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-label">Temperature</div>
+          <div class="card-value">${fmt(latest.temp_outdoor)}<span>°F</span></div>
+          <div class="card-sub">Indoor: ${fmt(latest.temp_indoor)}°F</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Feels Like</div>
+          <div class="card-value">${fmt(latest.feels_like)}<span>°F</span></div>
+          <div class="card-sub">Dew point: ${fmt(latest.dew_point)}°F</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Humidity</div>
+          <div class="card-value">${latest.humidity_outdoor ?? '--'}<span>%</span></div>
+          <div class="card-sub">Indoor: ${latest.humidity_indoor ?? '--'}%</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Wind</div>
+          <div class="card-value">${fmt(latest.wind_speed)}<span>mph</span></div>
+          <div class="card-sub">Gust: ${fmt(latest.wind_gust)} mph<br>${windDir(latest.wind_direction)}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">UV Index</div>
+          <div class="card-value">${latest.uv_index ?? '--'}</div>
+          <div class="card-sub">Solar: ${fmt(latest.solar_radiation)} W/m²</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Pressure</div>
+          <div class="card-value">${fmt(latest.pressure_relative)}<span>in</span></div>
+          <div class="card-sub">Absolute: ${fmt(latest.pressure_absolute)} in</div>
+        </div>
+      </div>
+
+      <div class="section-label">Rainfall Summary</div>
+      <div class="rain-grid">
+        <div class="rain-card">
+          <div class="card-label">Today</div>
+          <div class="record-value">${fmt(latest.rain_daily)}<span> in</span></div>
+          <div class="record-date">Last hour: ${fmt(latest.rain_hourly)} in</div>
+        </div>
+        <div class="rain-card">
+          <div class="card-label">This Week</div>
+          <div class="record-value">${fmt(latest.rain_weekly)}<span> in</span></div>
+        </div>
+        <div class="rain-card">
+          <div class="card-label">This Month</div>
+          <div class="record-value">${fmt(latest.rain_monthly)}<span> in</span></div>
+        </div>
+        <div class="rain-card">
+          <div class="card-label">YTD ${new Date().getFullYear()}</div>
+          <div class="record-value">${ytdRain}<span> in</span></div>
+          <div class="record-date">All-time total: ${fmt(latest.rain_total)} in</div>
+        </div>
+      </div>
+
+      <div class="section-label">All-Time Records</div>
+      <div class="records-grid">
+        <div class="record-card">
+          <div class="card-label">Hottest Reading</div>
+          <div class="record-value">${fmt(records.hot?.temp_outdoor)}<span>°F</span></div>
+          <div class="record-date">${records.hot ? formatDate(records.hot.recorded_at) : '--'}</div>
+        </div>
+        <div class="record-card">
+          <div class="card-label">Coldest Reading</div>
+          <div class="record-value">${fmt(records.cold?.temp_outdoor)}<span>°F</span></div>
+          <div class="record-date">${records.cold ? formatDate(records.cold.recorded_at) : '--'}</div>
+        </div>
+        <div class="record-card">
+          <div class="card-label">Rainiest Day</div>
+          <div class="record-value">${fmt(records.rain?.rain_daily)}<span> in</span></div>
+          <div class="record-date">${records.rain ? formatDate(records.rain.recorded_at) : '--'}</div>
+        </div>
+        <div class="record-card">
+          <div class="card-label">Strongest Gust</div>
+          <div class="record-value">${fmt(records.gust?.wind_gust)}<span> mph</span></div>
+          <div class="record-date">${records.gust ? formatDate(records.gust.recorded_at) : '--'}</div>
+        </div>
+      </div>
+
+      <div class="section-label">Charts — Last ${rangeLabel}</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Temperature</div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div>Actual</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Feels Like</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Rainfall</div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div>Hourly</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Daily Total</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="rainChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Wind</div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Speed</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#6ee7b7"></div>Gust</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="windChart"></canvas></div>
+        </div>
+      </div>
+    `;
+
+    renderCharts(rows);
+  }
+
+  function renderCharts(rows) {
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+    const labels = rows.map(r => formatTime(r.recorded_at, currentRange));
+
+    charts.temp = new Chart(document.getElementById('tempChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Temperature', data: rows.map(r => r.temp_outdoor),
+          borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.06)',
+          borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
+        { label: 'Feels Like', data: rows.map(r => r.feels_like),
+          borderColor: '#f59e0b', borderWidth: 1.5, pointRadius: 0,
+          tension: 0.4, borderDash: [4,3], fill: false }
+      ]},
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+        y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '°F' }}}}
+    });
+
+    charts.rain = new Chart(document.getElementById('rainChart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Hourly Rain', data: rows.map(r => r.rain_hourly),
+          backgroundColor: 'rgba(129,140,248,0.7)', borderRadius: 2 },
+        { label: 'Daily Total', data: rows.map(r => r.rain_daily),
+          backgroundColor: 'rgba(167,139,250,0.15)', borderColor: 'rgba(167,139,250,0.5)',
+          borderWidth: 1, type: 'line', pointRadius: 0, tension: 0.4, fill: false }
+      ]},
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+        y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '"' }}}}
+    });
+
+    charts.wind = new Chart(document.getElementById('windChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Wind Speed', data: rows.map(r => r.wind_speed),
+          borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.06)',
+          borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
+        { label: 'Wind Gust', data: rows.map(r => r.wind_gust),
+          borderColor: '#6ee7b7', borderWidth: 1.5, pointRadius: 0,
+          tension: 0.4, borderDash: [4,3], fill: false }
+      ]},
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+        y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + ' mph' }}}}
+    });
+  }
+
+  loadData();
+  setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
