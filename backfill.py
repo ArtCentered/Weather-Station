@@ -13,7 +13,7 @@ HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
-    "Prefer": "resolution=merge-duplicates"
+    "Prefer": "return=minimal,resolution=ignore-duplicates"
 }
 
 def fetch_awn_chunk(end_time):
@@ -98,6 +98,13 @@ while current_end > start:
         # Respect AWN rate limit (1 request/second)
         time.sleep(1)
 
+except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 409:
+            print(f"  Skipping duplicates, moving back in time...")
+            current_end = current_end - timedelta(hours=24)
+        else:
+            print(f"  Error: {e} — retrying in 5 seconds")
+            time.sleep(5)
     except Exception as e:
         print(f"  Error: {e} — retrying in 5 seconds")
         time.sleep(5)
