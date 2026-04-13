@@ -98,7 +98,7 @@ while current_end > start:
         # Respect AWN rate limit (1 request/second)
         time.sleep(1)
 
-except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError as e:
         if e.response.status_code == 409:
             print(f"  Skipping duplicates, moving back in time...")
             current_end = current_end - timedelta(hours=24)
