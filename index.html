@@ -257,27 +257,53 @@
 
   // EUGENE CLIMATE DATA
   async function fetchEugeneToday() {
-    // Get most recent Eugene data (NOAA has ~3 day lag) + today's normals
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?order=date.desc&limit=1`, {headers:H});
-    const data = await res.json();
-    const latest = data[0] || null;
-    // Also get today's normal from any year's same month-day
+    // NWS API for real-time Eugene Airport data (no token, no lag)
+    let nwsToday = null;
+    try {
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const nwsRes = await fetch(`https://api.weather.gov/stations/KEUG/observations?start=${todayStart.toISOString()}&limit=200`,
+        {headers:{'User-Agent':'WeatherDashboard/1.0'}});
+      const nwsData = await nwsRes.json();
+      const obs = nwsData.features || [];
+      const temps = obs.map(f => f.properties?.temperature?.value).filter(v => v != null).map(c => c*9/5+32);
+      if (temps.length) {
+        nwsToday = { high: Math.round(Math.max(...temps)*10)/10, low: Math.round(Math.min(...temps)*10)/10, observations: temps.length };
+      }
+      // Also get yesterday
+      const yestStart = new Date(todayStart - 86400000);
+      const nwsYest = await fetch(`https://api.weather.gov/stations/KEUG/observations?start=${yestStart.toISOString()}&end=${todayStart.toISOString()}&limit=200`,
+        {headers:{'User-Agent':'WeatherDashboard/1.0'}});
+      const yestData = await nwsYest.json();
+      const yTemps = (yestData.features || []).map(f => f.properties?.temperature?.value).filter(v => v != null).map(c => c*9/5+32);
+      if (yTemps.length) {
+        nwsToday.yesterdayHigh = Math.round(Math.max(...yTemps)*10)/10;
+        nwsToday.yesterdayLow = Math.round(Math.min(...yTemps)*10)/10;
+      }
+    } catch(e) { console.warn('NWS fetch failed:', e); }
+
+    // Get today's normals from Supabase (NOAA historical)
     const mm = String(new Date().getMonth()+1).padStart(2,'0');
     const dd = String(new Date().getDate()).padStart(2,'0');
-    const normRes = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?date=like.%-${mm}-${dd}&limit=1`, {headers:H}).catch(()=>null);
-    // If like doesn't work on date, use the OR approach
     let todayNormal = null;
-    if (!normRes || !normRes.ok) {
-      const years = [];
-      for (let y = 2020; y <= new Date().getFullYear(); y++) years.push(`date.eq.${y}-${mm}-${dd}`);
-      const normRes2 = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?or=(${years.join(',')})&limit=1`, {headers:H});
-      const normData = await normRes2.json();
-      todayNormal = normData[0] || null;
-    } else {
+    const years = [];
+    for (let y = 2020; y <= new Date().getFullYear(); y++) years.push(`date.eq.${y}-${mm}-${dd}`);
+    try {
+      const normRes = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?or=(${years.join(',')})&limit=1`, {headers:H});
       const normData = await normRes.json();
       todayNormal = normData[0] || null;
+    } catch(e) {}
+
+    // Fallback to NOAA historical if NWS fails
+    let noaaLatest = null;
+    if (!nwsToday) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?order=date.desc&limit=1`, {headers:H});
+        const data = await res.json();
+        noaaLatest = data[0] || null;
+      } catch(e) {}
     }
-    return { latest, todayNormal };
+
+    return { nwsToday, todayNormal, noaaLatest };
   }
   async function fetchEugeneMonthly(year) {
     const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -345,8 +371,9 @@
   }
   function renderLiveTab(){
     const{rows,latest,allRec,ytd,stats,eugeneData}=liveCache;
-    const eugene = eugeneData?.latest;
+    const nws = eugeneData?.nwsToday;
     const todayNormal = eugeneData?.todayNormal;
+    const noaaFallback = eugeneData?.noaaLatest;
     const rl=currentRange==='today'?"Mike's Midnight-to-Midnight":currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
     document.getElementById('tab-content').innerHTML=`
       <div class="time-controls">
@@ -374,12 +401,17 @@
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
-      <div class="section-label">Eugene Official (Airport)${eugene ? ` — Latest: ${formatDate(eugene.date)}` : ''}</div>
+      <div class="section-label">Eugene Airport${nws ? ' — Live' : noaaFallback ? ` — ${formatDate(noaaFallback.date)}` : ''}</div>
       <div class="cards-grid">
-        ${todayNormal ? `<div class="card"><div class="card-label">Today's Normal High</div><div class="card-value">${fmt(todayNormal.normal_tmax,0)}<span>°F</span></div><div class="card-sub">Normal low: ${fmt(todayNormal.normal_tmin,0)}°F</div></div>` : ''}
-        ${eugene ? `<div class="card"><div class="card-label">Latest High</div><div class="card-value">${fmt(eugene.tmax,0)}<span>°F</span></div><div class="card-sub">${formatDate(eugene.date)}</div></div>` : ''}
-        ${eugene ? `<div class="card"><div class="card-label">Latest Low</div><div class="card-value">${fmt(eugene.tmin,0)}<span>°F</span></div><div class="card-sub">${formatDate(eugene.date)}</div></div>` : ''}
-        ${eugene ? `<div class="card"><div class="card-label">Latest Precip</div><div class="card-value">${fmt(eugene.prcp,2)}<span>in</span></div><div class="card-sub">Wind: ${fmt(eugene.awnd,1)} mph</div></div>` : ''}
+        ${nws ? `
+          <div class="card"><div class="card-label">Today's High (so far)</div><div class="card-value">${fmt(nws.high,1)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmax,0)}°F` : ''}</div></div>
+          <div class="card"><div class="card-label">Today's Low (so far)</div><div class="card-value">${fmt(nws.low,1)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmin,0)}°F` : ''}</div></div>
+          ${nws.yesterdayHigh ? `<div class="card"><div class="card-label">Yesterday's High</div><div class="card-value">${fmt(nws.yesterdayHigh,1)}<span>°F</span></div><div class="card-sub">Low: ${fmt(nws.yesterdayLow,1)}°F</div></div>` : ''}
+        ` : noaaFallback ? `
+          <div class="card"><div class="card-label">Official High</div><div class="card-value">${fmt(noaaFallback.tmax,0)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmax,0)}°F` : ''}</div></div>
+          <div class="card"><div class="card-label">Official Low</div><div class="card-value">${fmt(noaaFallback.tmin,0)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmin,0)}°F` : ''}</div></div>
+          <div class="card"><div class="card-label">Official Precip</div><div class="card-value">${fmt(noaaFallback.prcp,2)}<span>in</span></div><div class="card-sub">Wind: ${fmt(noaaFallback.awnd,1)} mph</div></div>
+        ` : `<div class="card"><div class="card-label">Normal High</div><div class="card-value">${fmt(todayNormal?.normal_tmax,0)}<span>°F</span></div><div class="card-sub">Normal low: ${fmt(todayNormal?.normal_tmin,0)}°F</div></div>`}
       </div>
       <div class="section-label">Charts — Last ${rl}</div>
       <div class="charts-grid">
