@@ -412,7 +412,7 @@
         <div class="card"><div class="card-label">UV Index</div><div class="card-value">${latest.uv_index??'--'}</div><div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div></div>
         <div class="card"><div class="card-label">Pressure</div><div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div><div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div></div>
       </div>
-      <div class="section-label">${rl} Summary <span class="info-tip">?<span class="tip-text">${currentRange==='today'?"Mike insists a day starts and ends at midnight. The meteorologist in the family disagrees, but marriage is about compromise — so here's your midnight-to-midnight data, Mike.":"High, low, and average conditions computed from your station's data over the selected time period."}</span></span></div>
+      <div class="section-label">${rl} Summary <span class="info-tip">?<span class="tip-text">${currentRange==='today'?"Mike knows a day starts and ends at midnight. And so he argues for midnight-to-midnight data.":"High, low, and average conditions computed from your station's data over the selected time period."}</span></span></div>
       <div class="cards-grid">
         <div class="card"><div class="card-label">High Temp</div><div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.hot?formatDate(stats.hot.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Low Temp</div><div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.cold?formatDate(stats.cold.recorded_at):'--'}</div></div>
