@@ -1,7 +1,9 @@
 """Backfill temp_sensor2 and humidity_sensor2 from AWN historical data into existing rows."""
 import requests
 import time
+import sys
 from datetime import datetime, timezone, timedelta
+from urllib.parse import quote
 
 AWN_API_KEY = '71c90c3c356742fabb616b2880410900291dfdc82c57465e8942f025328287bd'
 AWN_APP_KEY = 'd66978568ea646efa351ac2d5d728f5d31f848c9c07a410bba43e16bd128c4db'
@@ -32,7 +34,7 @@ current_end = now
 total = 0
 updated = 0
 
-print(f'Backfilling sensor 2 data: {start.strftime("%Y-%m-%d")} to {now.strftime("%Y-%m-%d")}')
+print(f'Backfilling sensor 2 data: {start.strftime("%Y-%m-%d")} to {now.strftime("%Y-%m-%d")}', flush=True)
 
 while current_end > start:
     try:
@@ -47,9 +49,10 @@ while current_end > start:
             hum2 = r.get('humidity2')
             if ts and temp2 is not None:
                 recorded_at = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat()
-                # Update existing row with sensor 2 data
+                # Update existing row with sensor 2 data (URL-encode the + in timezone)
+                encoded_ts = quote(recorded_at, safe='')
                 result = requests.patch(
-                    f'{SUPABASE_URL}/rest/v1/weather_data?recorded_at=eq.{recorded_at}',
+                    f'{SUPABASE_URL}/rest/v1/weather_data?recorded_at=eq.{encoded_ts}',
                     json={'temp_sensor2': temp2, 'humidity_sensor2': hum2},
                     headers=HEADERS_SUPA
                 )
@@ -59,7 +62,7 @@ while current_end > start:
         total += len(raw_data)
         earliest = min(r.get('dateutc', float('inf')) for r in raw_data)
         current_end = datetime.fromtimestamp(earliest / 1000, tz=timezone.utc) - timedelta(seconds=1)
-        print(f'  Processed {len(raw_data)} readings, updated {updated} so far, earliest: {current_end.strftime("%Y-%m-%d %H:%M")}')
+        print(f'  Processed {len(raw_data)} readings, updated {updated} so far, earliest: {current_end.strftime("%Y-%m-%d %H:%M")}', flush=True)
         time.sleep(1)  # AWN rate limit
 
     except requests.exceptions.HTTPError as e:
