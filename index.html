@@ -227,6 +227,16 @@
     while(true){const res=await fetch(url+`&offset=${offset}`,{headers:H});if(!res.ok)throw new Error(`HTTP ${res.status}`);const page=await res.json();rows=rows.concat(page);if(page.length<1000)break;offset+=1000;}
     return rows;
   }
+  // Thin rows for charts — keep every Nth point to max ~500 points
+  function thinForChart(rows, maxPoints=500) {
+    if (rows.length <= maxPoints) return rows;
+    const step = Math.ceil(rows.length / maxPoints);
+    const thinned = [];
+    for (let i = 0; i < rows.length; i += step) thinned.push(rows[i]);
+    // Always include the last point
+    if (thinned[thinned.length-1] !== rows[rows.length-1]) thinned.push(rows[rows.length-1]);
+    return thinned;
+  }
   async function fetchRecords(){
     const base=`${SUPABASE_URL}/rest/v1/weather_data`;
     const[hotR,coldR,rainR,gustR]=await Promise.all([
@@ -247,10 +257,27 @@
 
   // EUGENE CLIMATE DATA
   async function fetchEugeneToday() {
-    // Get most recent Eugene data (NOAA has ~2 day lag)
+    // Get most recent Eugene data (NOAA has ~3 day lag) + today's normals
     const res = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?order=date.desc&limit=1`, {headers:H});
     const data = await res.json();
-    return data[0] || null;
+    const latest = data[0] || null;
+    // Also get today's normal from any year's same month-day
+    const mm = String(new Date().getMonth()+1).padStart(2,'0');
+    const dd = String(new Date().getDate()).padStart(2,'0');
+    const normRes = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?date=like.%-${mm}-${dd}&limit=1`, {headers:H}).catch(()=>null);
+    // If like doesn't work on date, use the OR approach
+    let todayNormal = null;
+    if (!normRes || !normRes.ok) {
+      const years = [];
+      for (let y = 2020; y <= new Date().getFullYear(); y++) years.push(`date.eq.${y}-${mm}-${dd}`);
+      const normRes2 = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?or=(${years.join(',')})&limit=1`, {headers:H});
+      const normData = await normRes2.json();
+      todayNormal = normData[0] || null;
+    } else {
+      const normData = await normRes.json();
+      todayNormal = normData[0] || null;
+    }
+    return { latest, todayNormal };
   }
   async function fetchEugeneMonthly(year) {
     const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -300,20 +327,30 @@
     const tc=document.getElementById('tab-content');
     tc.innerHTML='<div class="loading">Loading weather data...</div>';
     try{
-      const since=new Date(Date.now()-currentRange*86400000).toISOString();
-      const[rows,allRec,ytd,eugene]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD(),fetchEugeneToday()]);
+      let since;
+      if (currentRange === 'today') {
+        // Midnight local time
+        const now = new Date();
+        since = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      } else {
+        since = new Date(Date.now() - currentRange * 86400000).toISOString();
+      }
+      const[rows,allRec,ytd,eugeneData]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD(),fetchEugeneToday()]);
       if(!rows.length)throw new Error('No data found.');
       const latest=rows[rows.length-1];
       document.getElementById('last-updated').textContent=`Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
-      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows),eugene};
+      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows),eugeneData};
       renderLiveTab();
     }catch(err){document.getElementById('error-box').innerHTML=`<div class="error">${err.message}</div>`;tc.innerHTML='';}
   }
   function renderLiveTab(){
-    const{rows,latest,allRec,ytd,stats,eugene}=liveCache;
-    const rl=currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
+    const{rows,latest,allRec,ytd,stats,eugeneData}=liveCache;
+    const eugene = eugeneData?.latest;
+    const todayNormal = eugeneData?.todayNormal;
+    const rl=currentRange==='today'?"Mike's Midnight-to-Midnight":currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
     document.getElementById('tab-content').innerHTML=`
       <div class="time-controls">
+        <button class="time-btn ${currentRange==='today'?'active':''}" onclick="setRange('today')">M-Day</button>
         <button class="time-btn ${currentRange===1?'active':''}" onclick="setRange(1)">24H</button>
         <button class="time-btn ${currentRange===7?'active':''}" onclick="setRange(7)">7D</button>
         <button class="time-btn ${currentRange===30?'active':''}" onclick="setRange(30)">30D</button>
@@ -337,12 +374,13 @@
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
-      ${eugene ? `<div class="section-label">Eugene Official (Airport) — ${formatDate(eugene.date)}</div>
+      <div class="section-label">Eugene Official (Airport)${eugene ? ` — Latest: ${formatDate(eugene.date)}` : ''}</div>
       <div class="cards-grid">
-        <div class="card"><div class="card-label">Official High</div><div class="card-value">${fmt(eugene.tmax,0)}<span>°F</span></div><div class="card-sub">Normal: ${fmt(eugene.normal_tmax,0)}°F</div></div>
-        <div class="card"><div class="card-label">Official Low</div><div class="card-value">${fmt(eugene.tmin,0)}<span>°F</span></div><div class="card-sub">Normal: ${fmt(eugene.normal_tmin,0)}°F</div></div>
-        <div class="card"><div class="card-label">Official Precip</div><div class="card-value">${fmt(eugene.prcp,2)}<span>in</span></div><div class="card-sub">Wind: ${fmt(eugene.awnd,1)} mph</div></div>
-      </div>` : ''}
+        ${todayNormal ? `<div class="card"><div class="card-label">Today's Normal High</div><div class="card-value">${fmt(todayNormal.normal_tmax,0)}<span>°F</span></div><div class="card-sub">Normal low: ${fmt(todayNormal.normal_tmin,0)}°F</div></div>` : ''}
+        ${eugene ? `<div class="card"><div class="card-label">Latest High</div><div class="card-value">${fmt(eugene.tmax,0)}<span>°F</span></div><div class="card-sub">${formatDate(eugene.date)}</div></div>` : ''}
+        ${eugene ? `<div class="card"><div class="card-label">Latest Low</div><div class="card-value">${fmt(eugene.tmin,0)}<span>°F</span></div><div class="card-sub">${formatDate(eugene.date)}</div></div>` : ''}
+        ${eugene ? `<div class="card"><div class="card-label">Latest Precip</div><div class="card-value">${fmt(eugene.prcp,2)}<span>in</span></div><div class="card-sub">Wind: ${fmt(eugene.awnd,1)} mph</div></div>` : ''}
+      </div>
       <div class="section-label">Charts — Last ${rl}</div>
       <div class="charts-grid">
         <div class="chart-card"><div class="chart-header"><div class="chart-title">Temperature</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-feels)"></div>Feels Like</div></div></div><div class="chart-wrap"><canvas id="tempChart"></canvas></div></div>
@@ -352,13 +390,13 @@
     renderLiveCharts(rows);
   }
   function renderLiveCharts(rows){
-    destroyCharts();const labels=rows.map(r=>formatTime(r.recorded_at,currentRange));
+    destroyCharts();const chartRange=currentRange==='today'?1:currentRange;const chartRows=thinForChart(rows);const labels=chartRows.map(r=>formatTime(r.recorded_at,chartRange));
     const s=getComputedStyle(document.documentElement),d=getChartDefaults();
-    charts.temp=new Chart(document.getElementById('tempChart'),{type:'line',data:{labels,datasets:[{label:'Temp',data:rows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:'Feels',data:rows.map(r=>r.feels_like),borderColor:s.getPropertyValue('--chart-feels').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,borderDash:[4,3],fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
-    charts.rain=new Chart(document.getElementById('rainChart'),{type:'bar',data:{labels,datasets:[{label:'Hourly',data:rows.map(r=>r.rain_hourly),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderRadius:2},{label:'Daily',data:rows.map(r=>r.rain_daily),backgroundColor:s.getPropertyValue('--chart-rain-bg').trim(),borderColor:s.getPropertyValue('--chart-rain').trim(),borderWidth:1,type:'line',pointRadius:0,tension:0.4,fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
-    charts.wind=new Chart(document.getElementById('windChart'),{type:'line',data:{labels,datasets:[{label:'Speed',data:rows.map(r=>r.wind_speed),borderColor:s.getPropertyValue('--chart-wind').trim(),backgroundColor:s.getPropertyValue('--chart-wind-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:'Gust',data:rows.map(r=>r.wind_gust),borderColor:s.getPropertyValue('--chart-wind-light').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,borderDash:[4,3],fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+' mph'}}}}});
+    charts.temp=new Chart(document.getElementById('tempChart'),{type:'line',data:{labels,datasets:[{label:'Temp',data:chartRows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:'Feels',data:chartRows.map(r=>r.feels_like),borderColor:s.getPropertyValue('--chart-feels').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,borderDash:[4,3],fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
+    charts.rain=new Chart(document.getElementById('rainChart'),{type:'bar',data:{labels,datasets:[{label:'Hourly',data:chartRows.map(r=>r.rain_hourly),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderRadius:2},{label:'Daily',data:chartRows.map(r=>r.rain_daily),backgroundColor:s.getPropertyValue('--chart-rain-bg').trim(),borderColor:s.getPropertyValue('--chart-rain').trim(),borderWidth:1,type:'line',pointRadius:0,tension:0.4,fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+    charts.wind=new Chart(document.getElementById('windChart'),{type:'line',data:{labels,datasets:[{label:'Speed',data:chartRows.map(r=>r.wind_speed),borderColor:s.getPropertyValue('--chart-wind').trim(),backgroundColor:s.getPropertyValue('--chart-wind-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true},{label:'Gust',data:chartRows.map(r=>r.wind_gust),borderColor:s.getPropertyValue('--chart-wind-light').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,borderDash:[4,3],fill:false}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+' mph'}}}}});
   }
-  function setRange(days){currentRange=days;loadLiveTab();}
+  function setRange(range){currentRange=range;loadLiveTab();}
 
   // EXPLORER TAB
   function renderExplorerTab(){
@@ -416,19 +454,29 @@
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
-      <div class="section-label">Temperature & Rainfall</div>
-      <div class="chart-card"><div class="chart-wrap"><canvas id="explorerChart"></canvas></div></div>`;
+      <div class="section-label">Temperature</div>
+      <div class="chart-card"><div class="chart-wrap"><canvas id="explorerTempChart"></canvas></div></div>
+      <div class="section-label">Rainfall — Rate & Accumulation</div>
+      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Rain Rate (in/hr)</div><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Cumulative Total</div></div></div><div class="chart-wrap"><canvas id="explorerRainChart"></canvas></div></div>`;
     renderExplorerChart(rows);
   }
   function renderExplorerChart(rows){
-    if(charts.explorer)charts.explorer.destroy();
+    if(charts.explorerTemp)charts.explorerTemp.destroy();
+    if(charts.explorerRain)charts.explorerRain.destroy();
     const rangeDays=Math.max(1,Math.round((new Date(explorerCache.endVal)-new Date(explorerCache.startVal))/86400000)+1);
     const labels=rows.map(r=>formatTime(r.recorded_at,rangeDays));
     const s=getComputedStyle(document.documentElement),d=getChartDefaults();
-    charts.explorer=new Chart(document.getElementById('explorerChart'),{type:'line',data:{labels,datasets:[
-      {label:'Temp',data:rows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true,yAxisID:'y'},
-      {label:'Rain',data:rows.map(r=>r.rain_hourly),borderColor:s.getPropertyValue('--chart-rain').trim(),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderWidth:1,pointRadius:0,type:'bar',yAxisID:'y1'}
-    ]},options:{...d,scales:{x:d.scales.x,y:{...d.scales.y,position:'left',ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}},y1:{...d.scales.y,position:'right',grid:{drawOnChartArea:false},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+    // Temp chart
+    charts.explorerTemp=new Chart(document.getElementById('explorerTempChart'),{type:'line',data:{labels,datasets:[
+      {label:'Temperature',data:rows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true}
+    ]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
+    // Rain chart with accumulation
+    let cumulative = 0;
+    const accumData = rows.map(r => { cumulative += (r.rain_hourly || 0); return Math.round(cumulative * 100) / 100; });
+    charts.explorerRain=new Chart(document.getElementById('explorerRainChart'),{type:'bar',data:{labels,datasets:[
+      {label:'Rain Rate',data:rows.map(r=>r.rain_hourly),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderRadius:2,yAxisID:'y'},
+      {label:'Cumulative',data:accumData,borderColor:s.getPropertyValue('--green').trim(),backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.4,type:'line',yAxisID:'y1'}
+    ]},options:{...d,scales:{x:d.scales.x,y:{...d.scales.y,position:'left',title:{display:true,text:'Rate (in/hr)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}},y1:{...d.scales.y,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Total (in)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
   }
 
   // MONTHLY TAB
