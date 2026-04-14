@@ -405,12 +405,14 @@
       </div>
       <div class="section-label">Current Conditions <span class="info-tip">?<span class="tip-text">Live readings from your personal weather station. Updates every 5 minutes via Ambient Weather Network.</span></span></div>
       <div class="cards-grid">
-        <div class="card"><div class="card-label">Temperature</div><div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">Indoor: ${fmt(latest.temp_indoor,1)}°F</div></div>
-        <div class="card"><div class="card-label">Feels Like</div><div class="card-value">${fmt(latest.feels_like,1)}<span>°F</span></div><div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div></div>
-        <div class="card"><div class="card-label">Humidity</div><div class="card-value">${latest.humidity_outdoor??'--'}<span>%</span></div><div class="card-sub">Indoor: ${latest.humidity_indoor??'--'}%</div></div>
+        <div class="card"><div class="card-label">Temperature</div><div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">Feels like: ${fmt(latest.feels_like,1)}°F</div></div>
+        <div class="card"><div class="card-label">Downstairs</div><div class="card-value">${fmt(latest.temp_indoor,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_indoor??'--'}%</div></div>
+        <div class="card"><div class="card-label">Upstairs</div><div class="card-value">${fmt(latest.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_sensor2??'--'}%</div></div>
         <div class="card"><div class="card-label">Wind</div><div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div><div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div></div>
-        <div class="card"><div class="card-label">UV Index</div><div class="card-value">${latest.uv_index??'--'}</div><div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div></div>
+        <div class="card"><div class="card-label">Humidity</div><div class="card-value">${latest.humidity_outdoor??'--'}<span>%</span></div><div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div></div>
         <div class="card"><div class="card-label">Pressure</div><div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div><div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div></div>
+        <div class="card"><div class="card-label">UV Index</div><div class="card-value">${latest.uv_index??'--'}</div><div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div></div>
+        ${latest.aqi_pm25!=null?`<div class="card"><div class="card-label">Air Quality</div><div class="card-value">${latest.aqi_pm25}<span>AQI</span></div><div class="card-sub">${latest.aqi_pm25<=50?'Good':latest.aqi_pm25<=100?'Moderate':latest.aqi_pm25<=150?'Unhealthy (Sensitive)':latest.aqi_pm25<=200?'Unhealthy':'Very Unhealthy'}</div></div>`:''}
       </div>
       <div class="section-label">${rl} Summary <span class="info-tip">?<span class="tip-text">${currentRange==='today'?"Mike knows a day starts and ends at midnight. And so he argues for midnight-to-midnight data.":"High, low, and average conditions computed from your station's data over the selected time period."}</span></span></div>
       <div class="cards-grid">
