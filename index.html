@@ -535,8 +535,16 @@
     ]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
 
     // Rain chart: cumulative actual vs cumulative normal
-    let cumActual = 0;
-    const accumData = chartRows.map(r => { cumActual += (r.rain_hourly || 0); return Math.round(cumActual * 100) / 100; });
+    // Build cumulative rain from rain_daily (resets at midnight, so carry over day totals)
+    let carryOver = 0, lastDay = null, lastDailyMax = 0;
+    const accumData = chartRows.map(r => {
+      const day = r.recorded_at.substring(0,10);
+      const rd = r.rain_daily || 0;
+      if (lastDay && day !== lastDay) { carryOver += lastDailyMax; lastDailyMax = 0; }
+      if (rd > lastDailyMax) lastDailyMax = rd;
+      lastDay = day;
+      return Math.round((carryOver + rd) * 100) / 100;
+    });
 
     // Build cumulative normal precip (sum daily normals)
     let cumNormal = 0;
