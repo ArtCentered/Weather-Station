@@ -467,12 +467,15 @@
     if(!startVal||!endVal)return;
     document.getElementById('explorer-results').innerHTML='<div class="loading">Searching...</div>';
     try{
-      // Use local midnight, not UTC — startVal is 'YYYY-MM-DD', treat as local time
       const startLocal = new Date(startVal + 'T00:00:00');
       const endLocal = new Date(endVal + 'T23:59:59');
-      const rows=await fetchRows(startLocal.toISOString(),endLocal.toISOString());
+      // Fetch station data and Eugene normals in parallel
+      const [rows, normals] = await Promise.all([
+        fetchRows(startLocal.toISOString(),endLocal.toISOString()),
+        fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?select=date,normal_tmax,normal_tmin,prcp&date=gte.${startVal}&date=lte.${endVal}&order=date.asc`,{headers:H}).then(r=>r.json()).catch(()=>[])
+      ]);
       if(!rows.length){document.getElementById('explorer-results').innerHTML='<div class="error">No data found for this range.</div>';return;}
-      explorerCache={rows,startVal,endVal};renderExplorerResults();
+      explorerCache={rows,startVal,endVal,normals};renderExplorerResults();
     }catch(err){document.getElementById('explorer-results').innerHTML=`<div class="error">${err.message}</div>`;}
   }
   function renderExplorerResults(){
@@ -491,29 +494,68 @@
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
-      <div class="section-label">Temperature</div>
-      <div class="chart-card"><div class="chart-wrap"><canvas id="explorerTempChart"></canvas></div></div>
-      <div class="section-label">Rainfall — Rate & Accumulation</div>
-      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Rain Rate (in/hr)</div><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Cumulative Total</div></div></div><div class="chart-wrap"><canvas id="explorerRainChart"></canvas></div></div>`;
+      <div class="section-label">Temperature vs Climate Normal</div>
+      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Running Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange);opacity:0.2"></div>Normal Range</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerTempChart"></canvas></div></div>
+      <div class="section-label">Precipitation vs Climate Normal</div>
+      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Rain Rate</div><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Your Cumulative</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Normal Cumulative</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerRainChart"></canvas></div></div>`;
     renderExplorerChart(rows);
   }
   function renderExplorerChart(rows){
     if(charts.explorerTemp)charts.explorerTemp.destroy();
     if(charts.explorerRain)charts.explorerRain.destroy();
+    const normals = explorerCache.normals || [];
     const rangeDays=Math.max(1,Math.round((new Date(explorerCache.endVal)-new Date(explorerCache.startVal))/86400000)+1);
-    const labels=rows.map(r=>formatTime(r.recorded_at,rangeDays));
+    const chartRows = thinForChart(rows);
+    const labels=chartRows.map(r=>formatTime(r.recorded_at,rangeDays));
     const s=getComputedStyle(document.documentElement),d=getChartDefaults();
-    // Temp chart
+
+    // Build normals lookup by date (YYYY-MM-DD)
+    const normByDate = {};
+    for (const n of normals) normByDate[n.date] = n;
+
+    // Map each chart row to its day's normal
+    const normalHigh = chartRows.map(r => { const day = r.recorded_at.substring(0,10); return normByDate[day]?.normal_tmax ?? null; });
+    const normalLow = chartRows.map(r => { const day = r.recorded_at.substring(0,10); return normByDate[day]?.normal_tmin ?? null; });
+
+    // Running average (24-reading window ~2 hours, or longer for multi-day)
+    const windowSize = Math.max(12, Math.min(144, Math.round(chartRows.length / 10)));
+    const runningAvg = chartRows.map((r, i) => {
+      const start = Math.max(0, i - windowSize);
+      const slice = chartRows.slice(start, i + 1).filter(x => x.temp_outdoor != null);
+      return slice.length ? Math.round(slice.reduce((s, x) => s + x.temp_outdoor, 0) / slice.length * 10) / 10 : null;
+    });
+
+    // Temp chart with normal band + running average
+    const orangeColor = s.getPropertyValue('--orange').trim();
     charts.explorerTemp=new Chart(document.getElementById('explorerTempChart'),{type:'line',data:{labels,datasets:[
-      {label:'Temperature',data:rows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:true}
+      {label:'Normal High',data:normalHigh,borderColor:'transparent',backgroundColor:orangeColor+'30',borderWidth:0,pointRadius:0,tension:0.4,fill:'+1',order:3},
+      {label:'Normal Low',data:normalLow,borderColor:'transparent',backgroundColor:'transparent',borderWidth:0,pointRadius:0,tension:0.4,fill:false,order:3},
+      {label:'Running Avg',data:runningAvg,borderColor:orangeColor,borderWidth:2.5,pointRadius:0,tension:0.4,borderDash:[],fill:false,order:1},
+      {label:'Actual',data:chartRows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),backgroundColor:s.getPropertyValue('--chart-fill').trim(),borderWidth:1.5,pointRadius:0,tension:0.4,fill:false,order:2}
     ]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
-    // Rain chart with accumulation
-    let cumulative = 0;
-    const accumData = rows.map(r => { cumulative += (r.rain_hourly || 0); return Math.round(cumulative * 100) / 100; });
+
+    // Rain chart: cumulative actual vs cumulative normal
+    let cumActual = 0;
+    const accumData = chartRows.map(r => { cumActual += (r.rain_hourly || 0); return Math.round(cumActual * 100) / 100; });
+
+    // Build cumulative normal precip (sum daily normals)
+    let cumNormal = 0;
+    const normalCumByDate = {};
+    const sortedDates = Object.keys(normByDate).sort();
+    for (const date of sortedDates) {
+      cumNormal += (normByDate[date].prcp || 0);
+      normalCumByDate[date] = Math.round(cumNormal * 100) / 100;
+    }
+    const normalCumData = chartRows.map(r => {
+      const day = r.recorded_at.substring(0,10);
+      return normalCumByDate[day] ?? null;
+    });
+
     charts.explorerRain=new Chart(document.getElementById('explorerRainChart'),{type:'bar',data:{labels,datasets:[
-      {label:'Rain Rate',data:rows.map(r=>r.rain_hourly),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderRadius:2,yAxisID:'y'},
-      {label:'Cumulative',data:accumData,borderColor:s.getPropertyValue('--green').trim(),backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.4,type:'line',yAxisID:'y1'}
-    ]},options:{...d,scales:{x:d.scales.x,y:{...d.scales.y,position:'left',title:{display:true,text:'Rate (in/hr)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}},y1:{...d.scales.y,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Total (in)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+      {label:'Rain Rate',data:chartRows.map(r=>r.rain_hourly),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderRadius:2,yAxisID:'y',order:3},
+      {label:'Your Total',data:accumData,borderColor:s.getPropertyValue('--green').trim(),backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,tension:0.4,type:'line',yAxisID:'y1',order:1},
+      {label:'Normal Total',data:normalCumData,borderColor:orangeColor,backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.4,borderDash:[6,3],type:'line',yAxisID:'y1',order:2}
+    ]},options:{...d,scales:{x:d.scales.x,y:{...d.scales.y,position:'left',title:{display:true,text:'Rate (in/hr)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}},y1:{...d.scales.y,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Cumulative (in)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
   }
 
   // MONTHLY TAB
