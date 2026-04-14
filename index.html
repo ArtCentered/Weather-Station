@@ -147,16 +147,16 @@
   }
   .info-tip:hover .tip-text, .info-tip:focus .tip-text { display: block; }
   .tip-text {
-    display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
-    transform: translateX(-50%); width: 260px; max-width: 80vw; padding: 12px;
+    display: none; position: absolute; top: calc(100% + 8px); left: 0;
+    width: 260px; max-width: 80vw; padding: 12px;
     background: #1e293b; color: #f8fafc; border-radius: 8px;
     font-size: 0.8rem; font-weight: 400; line-height: 1.5;
     z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.4); text-align: left;
   }
-  .tip-text::after {
-    content: ''; position: absolute; top: 100%; left: 50%;
-    transform: translateX(-50%); border: 6px solid transparent;
-    border-top-color: #1e293b;
+  .tip-text::before {
+    content: ''; position: absolute; bottom: 100%; left: 12px;
+    border: 6px solid transparent;
+    border-bottom-color: #1e293b;
   }
 </style>
 </head>
