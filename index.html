@@ -535,12 +535,15 @@
       <div class="section-label">Temperature vs Climate Normal <span class="info-tip">?<span class="tip-text">Blue line is your station's actual readings. Orange line is a running average to smooth out the daily swings. The shaded band shows the 30-year normal high/low range from Eugene Airport — if the blue line is above it, it's warmer than average.</span></span></div>
       <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Running Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange);opacity:0.2"></div>Normal Range</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerTempChart"></canvas></div></div>
       <div class="section-label">Precipitation vs Climate Normal <span class="info-tip">?<span class="tip-text">Purple bars show rain rate (how hard it's raining). Green line is your station's cumulative rainfall over the period. Dashed orange line is what Eugene Airport normally gets by that date (30-year average). Green above orange = wetter than normal.</span></span></div>
-      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Rain Rate</div><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Your Cumulative</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Normal Cumulative</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerRainChart"></canvas></div></div>`;
+      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Rain Rate</div><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Your Cumulative</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Normal Cumulative</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerRainChart"></canvas></div></div>
+      <div class="section-label">Indoor vs Outdoor Temperature <span class="info-tip">?<span class="tip-text">Shows how outdoor temperature influences your indoor climate. Upstairs is the base station, Downstairs is the wireless sensor. Even with heating/cooling, you can see the outdoor swings reflected indoors.</span></span></div>
+      <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Outdoor</div><div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Upstairs</div><div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Downstairs</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerIndoorChart"></canvas></div></div>`;
     renderExplorerChart(rows);
   }
   function renderExplorerChart(rows){
     if(charts.explorerTemp)charts.explorerTemp.destroy();
     if(charts.explorerRain)charts.explorerRain.destroy();
+    if(charts.explorerIndoor)charts.explorerIndoor.destroy();
     const normals = explorerCache.normals || [];
     const rangeDays=Math.max(1,Math.round((new Date(explorerCache.endVal)-new Date(explorerCache.startVal))/86400000)+1);
     const chartRows = thinForChart(rows);
@@ -602,6 +605,21 @@
       {label:'Your Total',data:accumData,borderColor:s.getPropertyValue('--green').trim(),backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,tension:0.4,type:'line',yAxisID:'y1',order:1},
       {label:'Normal Total',data:normalCumData,borderColor:orangeColor,backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.4,borderDash:[6,3],type:'line',yAxisID:'y1',order:2}
     ]},options:{...d,scales:{x:d.scales.x,y:{...d.scales.y,position:'left',title:{display:true,text:'Rate (in/hr)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}},y1:{...d.scales.y,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Cumulative (in)',color:s.getPropertyValue('--text-muted').trim(),font:{size:10}},ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+
+    // Indoor vs Outdoor chart
+    const hasIndoor = chartRows.some(r=>r.temp_indoor!=null) || chartRows.some(r=>r.temp_sensor2!=null);
+    if (hasIndoor && document.getElementById('explorerIndoorChart')) {
+      const indoorDatasets = [
+        {label:'Outdoor',data:chartRows.map(r=>r.temp_outdoor),borderColor:s.getPropertyValue('--chart-temp').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:false}
+      ];
+      if (chartRows.some(r=>r.temp_indoor!=null)) {
+        indoorDatasets.push({label:'Upstairs',data:chartRows.map(r=>r.temp_indoor),borderColor:s.getPropertyValue('--red').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:false});
+      }
+      if (chartRows.some(r=>r.temp_sensor2!=null)) {
+        indoorDatasets.push({label:'Downstairs',data:chartRows.map(r=>r.temp_sensor2),borderColor:s.getPropertyValue('--purple').trim(),borderWidth:2,pointRadius:0,tension:0.4,fill:false});
+      }
+      charts.explorerIndoor=new Chart(document.getElementById('explorerIndoorChart'),{type:'line',data:{labels,datasets:indoorDatasets},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
+    }
   }
 
   // MONTHLY TAB
