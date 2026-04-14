@@ -406,8 +406,8 @@
       <div class="section-label">Current Conditions <span class="info-tip">?<span class="tip-text">Live readings from your personal weather station. Updates every 5 minutes via Ambient Weather Network.</span></span></div>
       <div class="cards-grid">
         <div class="card"><div class="card-label">Temperature</div><div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">Feels like: ${fmt(latest.feels_like,1)}°F</div></div>
-        <div class="card"><div class="card-label">Downstairs</div><div class="card-value">${fmt(latest.temp_indoor,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_indoor??'--'}%</div></div>
-        <div class="card"><div class="card-label">Upstairs</div><div class="card-value">${fmt(latest.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_sensor2??'--'}%</div></div>
+        <div class="card"><div class="card-label">Upstairs</div><div class="card-value">${fmt(latest.temp_indoor,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_indoor??'--'}%</div></div>
+        <div class="card"><div class="card-label">Downstairs</div><div class="card-value">${fmt(latest.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_sensor2??'--'}%</div></div>
         <div class="card"><div class="card-label">Wind</div><div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div><div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div></div>
         <div class="card"><div class="card-label">Humidity</div><div class="card-value">${latest.humidity_outdoor??'--'}<span>%</span></div><div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div></div>
         <div class="card"><div class="card-label">Pressure</div><div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div><div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div></div>
