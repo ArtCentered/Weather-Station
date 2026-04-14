@@ -237,7 +237,16 @@
     const dailyMaxRain={};for(const r of valid(rows,'rain_daily')){const day=r.recorded_at.substring(0,10);if(!dailyMaxRain[day]||r.rain_daily>dailyMaxRain[day])dailyMaxRain[day]=r.rain_daily;}
     const totalRain=Object.values(dailyMaxRain).reduce((s,v)=>s+v,0);
     let maxRainRate=0;for(const r of rains){if(r.rain_hourly>maxRainRate)maxRainRate=r.rain_hourly;}
-    return{hot:hotRow,cold:coldRow,gustRow,rainRow,avgTemp,avgWind,avgHumidity,totalRain,maxRainRate};
+    // Indoor stats
+    const indoorTemps = valid(rows,'temp_indoor');
+    const avgIndoor = indoorTemps.length ? indoorTemps.reduce((s,r)=>s+r.temp_indoor,0)/indoorTemps.length : null;
+    let indoorHigh = null, indoorLow = null;
+    for (const r of indoorTemps) { if (!indoorHigh||r.temp_indoor>indoorHigh) indoorHigh=r.temp_indoor; if (!indoorLow||r.temp_indoor<indoorLow) indoorLow=r.temp_indoor; }
+    const sensor2Temps = valid(rows,'temp_sensor2');
+    const avgSensor2 = sensor2Temps.length ? sensor2Temps.reduce((s,r)=>s+r.temp_sensor2,0)/sensor2Temps.length : null;
+    let sensor2High = null, sensor2Low = null;
+    for (const r of sensor2Temps) { if (!sensor2High||r.temp_sensor2>sensor2High) sensor2High=r.temp_sensor2; if (!sensor2Low||r.temp_sensor2<sensor2Low) sensor2Low=r.temp_sensor2; }
+    return{hot:hotRow,cold:coldRow,gustRow,rainRow,avgTemp,avgWind,avgHumidity,totalRain,maxRainRate,avgIndoor,indoorHigh,indoorLow,avgSensor2,sensor2High,sensor2Low};
   }
 
   async function fetchRows(since,until){
@@ -403,15 +412,18 @@
         <button class="time-btn ${currentRange===30?'active':''}" onclick="setRange(30)">30D</button>
         <button class="time-btn ${currentRange===365?'active':''}" onclick="setRange(365)">1Y</button>
       </div>
-      <div class="section-label">Current Conditions <span class="info-tip">?<span class="tip-text">Live readings from your personal weather station. Updates every 5 minutes via Ambient Weather Network.</span></span></div>
+      <div class="section-label">Current Conditions <span class="info-tip">?<span class="tip-text">Live outdoor readings from your personal weather station. Updates every 5 minutes via Ambient Weather Network.</span></span></div>
       <div class="cards-grid">
         <div class="card"><div class="card-label">Temperature</div><div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">Feels like: ${fmt(latest.feels_like,1)}°F</div></div>
-        <div class="card"><div class="card-label">Upstairs</div><div class="card-value">${fmt(latest.temp_indoor,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_indoor??'--'}%</div></div>
-        <div class="card"><div class="card-label">Downstairs</div><div class="card-value">${fmt(latest.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_sensor2??'--'}%</div></div>
         <div class="card"><div class="card-label">Wind</div><div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div><div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div></div>
         <div class="card"><div class="card-label">Humidity</div><div class="card-value">${latest.humidity_outdoor??'--'}<span>%</span></div><div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div></div>
         <div class="card"><div class="card-label">Pressure</div><div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div><div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div></div>
         <div class="card"><div class="card-label">UV Index</div><div class="card-value">${latest.uv_index??'--'}</div><div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div></div>
+      </div>
+      <div class="section-label">Indoor <span class="info-tip">?<span class="tip-text">Upstairs is the base station console. Downstairs is the wireless sensor (sensor 2). Air quality coming soon via PurpleAir.</span></span></div>
+      <div class="cards-grid">
+        <div class="card"><div class="card-label">Upstairs</div><div class="card-value">${fmt(latest.temp_indoor,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_indoor??'--'}%</div></div>
+        <div class="card"><div class="card-label">Downstairs</div><div class="card-value">${fmt(latest.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_sensor2??'--'}%</div></div>
       </div>
       <div class="section-label">${rl} Summary <span class="info-tip">?<span class="tip-text">${currentRange==='today'?"Mike knows a day starts and ends at midnight. And so he argues for midnight-to-midnight data.":"High, low, and average conditions computed from your station's data over the selected time period."}</span></span></div>
       <div class="cards-grid">
@@ -515,6 +527,11 @@
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
+      ${stats.avgIndoor!=null||stats.avgSensor2!=null?`<div class="section-label">Indoor</div>
+      <div class="cards-grid">
+        ${stats.avgIndoor!=null?`<div class="card"><div class="card-label">Upstairs Avg</div><div class="card-value">${fmt(stats.avgIndoor,1)}<span>°F</span></div><div class="card-sub">High: ${fmt(stats.indoorHigh,1)}°F / Low: ${fmt(stats.indoorLow,1)}°F</div></div>`:''}
+        ${stats.avgSensor2!=null?`<div class="card"><div class="card-label">Downstairs Avg</div><div class="card-value">${fmt(stats.avgSensor2,1)}<span>°F</span></div><div class="card-sub">High: ${fmt(stats.sensor2High,1)}°F / Low: ${fmt(stats.sensor2Low,1)}°F</div></div>`:''}
+      </div>`:''}
       <div class="section-label">Temperature vs Climate Normal <span class="info-tip">?<span class="tip-text">Blue line is your station's actual readings. Orange line is a running average to smooth out the daily swings. The shaded band shows the 30-year normal high/low range from Eugene Airport — if the blue line is above it, it's warmer than average.</span></span></div>
       <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Running Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange);opacity:0.2"></div>Normal Range</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerTempChart"></canvas></div></div>
       <div class="section-label">Precipitation vs Climate Normal <span class="info-tip">?<span class="tip-text">Purple bars show rain rate (how hard it's raining). Green line is your station's cumulative rainfall over the period. Dashed orange line is what Eugene Airport normally gets by that date (30-year average). Green above orange = wetter than normal.</span></span></div>
@@ -652,14 +669,26 @@
     if(recordsCache.records){renderRecordsTab();return;}
     tc.innerHTML='<div class="loading">Loading records...</div>';
     try{
-      const[records,ytd,thisDay]=await Promise.all([fetchRecords(),fetchYTD(),fetchEugeneThisDay()]);
-      const latestRes=await fetch(`${SUPABASE_URL}/rest/v1/weather_data?order=recorded_at.desc&limit=1`,{headers:H});
+      const base=`${SUPABASE_URL}/rest/v1/weather_data`;
+      const[records,ytd,thisDay,indoorHighR,indoorLowR,sensor2HighR,sensor2LowR]=await Promise.all([
+        fetchRecords(),fetchYTD(),fetchEugeneThisDay(),
+        fetch(`${base}?select=temp_indoor,recorded_at&temp_indoor=not.is.null&order=temp_indoor.desc.nullslast&limit=1`,{headers:H}).then(r=>r.json()),
+        fetch(`${base}?select=temp_indoor,recorded_at&temp_indoor=not.is.null&order=temp_indoor.asc.nullslast&limit=1`,{headers:H}).then(r=>r.json()),
+        fetch(`${base}?select=temp_sensor2,recorded_at&temp_sensor2=not.is.null&order=temp_sensor2.desc.nullslast&limit=1`,{headers:H}).then(r=>r.json()),
+        fetch(`${base}?select=temp_sensor2,recorded_at&temp_sensor2=not.is.null&order=temp_sensor2.asc.nullslast&limit=1`,{headers:H}).then(r=>r.json()),
+      ]);
+      const latestRes=await fetch(`${base}?order=recorded_at.desc&limit=1`,{headers:H});
       const latest=(await latestRes.json())[0];
-      recordsCache={records,ytd,latest,thisDay};renderRecordsTab();
+      const indoorRecords={
+        upHigh:indoorHighR[0]||null, upLow:indoorLowR[0]||null,
+        downHigh:sensor2HighR[0]||null, downLow:sensor2LowR[0]||null
+      };
+      recordsCache={records,ytd,latest,thisDay,indoorRecords};renderRecordsTab();
     }catch(err){tc.innerHTML=`<div class="error">${err.message}</div>`;}
   }
   function renderRecordsTab(){
-    const{records,ytd,latest,thisDay}=recordsCache;
+    const{records,ytd,latest,thisDay,indoorRecords}=recordsCache;
+    const ir=indoorRecords||{};
     const mmdd=new Date().toLocaleDateString([],{month:'long',day:'numeric'});
     let thisDayHtml='';
     if(thisDay&&thisDay.length){
@@ -684,6 +713,13 @@
         <div class="rain-card"><div class="card-label">This Week</div><div class="record-value">${fmt(latest?.rain_weekly,2)}<span> in</span></div></div>
         <div class="rain-card"><div class="card-label">This Month</div><div class="record-value">${fmt(latest?.rain_monthly,2)}<span> in</span></div></div>
         <div class="rain-card"><div class="card-label">YTD ${new Date().getFullYear()}</div><div class="record-value">${ytd}<span> in</span></div></div>
+      </div>
+      <div class="section-label">Indoor Records <span class="info-tip">?<span class="tip-text">All-time indoor temperature extremes from the base station (Upstairs) and wireless sensor (Downstairs). Downstairs data starts April 2026.</span></span></div>
+      <div class="records-grid">
+        <div class="record-card"><div class="card-label">Upstairs High</div><div class="record-value">${fmt(ir.upHigh?.temp_indoor,1)}<span>°F</span></div><div class="record-date">${ir.upHigh?formatDate(ir.upHigh.recorded_at):'--'}</div></div>
+        <div class="record-card"><div class="card-label">Upstairs Low</div><div class="record-value">${fmt(ir.upLow?.temp_indoor,1)}<span>°F</span></div><div class="record-date">${ir.upLow?formatDate(ir.upLow.recorded_at):'--'}</div></div>
+        ${ir.downHigh?`<div class="record-card"><div class="card-label">Downstairs High</div><div class="record-value">${fmt(ir.downHigh.temp_sensor2,1)}<span>°F</span></div><div class="record-date">${formatDate(ir.downHigh.recorded_at)}</div></div>`:''}
+        ${ir.downLow?`<div class="record-card"><div class="card-label">Downstairs Low</div><div class="record-value">${fmt(ir.downLow.temp_sensor2,1)}<span>°F</span></div><div class="record-date">${formatDate(ir.downLow.recorded_at)}</div></div>`:''}
       </div>
       ${thisDayHtml}`;
   }
