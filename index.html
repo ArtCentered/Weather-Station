@@ -245,6 +245,45 @@
     return ytd>0?ytd.toFixed(2):'--';
   }
 
+  // EUGENE CLIMATE DATA
+  async function fetchEugeneToday() {
+    // Get most recent Eugene data (NOAA has ~2 day lag)
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?order=date.desc&limit=1`, {headers:H});
+    const data = await res.json();
+    return data[0] || null;
+  }
+  async function fetchEugeneMonthly(year) {
+    const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?date=gte.${year}-01-01&date=lte.${year}-12-31&order=date.asc`, {headers:H});
+    const rows = await res.json();
+    // Group by month
+    const byMonth = {};
+    for (const r of rows) {
+      const m = parseInt(r.date.substring(5,7)) - 1;
+      if (!byMonth[m]) byMonth[m] = {rain:0, temps:[], highs:[], lows:[], normals_high:[], normals_low:[]};
+      if (r.prcp != null) byMonth[m].rain += r.prcp;
+      if (r.tmax != null) { byMonth[m].temps.push((r.tmax+r.tmin)/2); byMonth[m].highs.push(r.tmax); byMonth[m].lows.push(r.tmin); }
+      if (r.normal_tmax != null) byMonth[m].normals_high.push(r.normal_tmax);
+      if (r.normal_tmin != null) byMonth[m].normals_low.push(r.normal_tmin);
+    }
+    return Object.keys(byMonth).map(m => {
+      const d = byMonth[m];
+      const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+      return { month: monthNames[m], rain: d.rain, avgTemp: avg(d.temps), high: d.highs.length ? Math.max(...d.highs) : null, low: d.lows.length ? Math.min(...d.lows) : null, normalHigh: avg(d.normals_high), normalLow: avg(d.normals_low) };
+    });
+  }
+  async function fetchEugeneThisDay() {
+    // Get all data for today's month-day across available years
+    const now = new Date();
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const dd = String(now.getDate()).padStart(2,'0');
+    // Build OR query for each year we might have data
+    const years = [];
+    for (let y = 2020; y <= now.getFullYear(); y++) years.push(`date.eq.${y}-${mm}-${dd}`);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/eugene_climate?or=(${years.join(',')})&order=date.desc`, {headers:H});
+    return await res.json();
+  }
+
   // TAB SYSTEM
   function switchTab(name){
     activeTab=name;
@@ -262,16 +301,16 @@
     tc.innerHTML='<div class="loading">Loading weather data...</div>';
     try{
       const since=new Date(Date.now()-currentRange*86400000).toISOString();
-      const[rows,allRec,ytd]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD()]);
+      const[rows,allRec,ytd,eugene]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD(),fetchEugeneToday()]);
       if(!rows.length)throw new Error('No data found.');
       const latest=rows[rows.length-1];
       document.getElementById('last-updated').textContent=`Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
-      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows)};
+      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows),eugene};
       renderLiveTab();
     }catch(err){document.getElementById('error-box').innerHTML=`<div class="error">${err.message}</div>`;tc.innerHTML='';}
   }
   function renderLiveTab(){
-    const{rows,latest,allRec,ytd,stats}=liveCache;
+    const{rows,latest,allRec,ytd,stats,eugene}=liveCache;
     const rl=currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
     document.getElementById('tab-content').innerHTML=`
       <div class="time-controls">
@@ -298,6 +337,12 @@
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
+      ${eugene ? `<div class="section-label">Eugene Official (Airport) — ${formatDate(eugene.date)}</div>
+      <div class="cards-grid">
+        <div class="card"><div class="card-label">Official High</div><div class="card-value">${fmt(eugene.tmax,0)}<span>°F</span></div><div class="card-sub">Normal: ${fmt(eugene.normal_tmax,0)}°F</div></div>
+        <div class="card"><div class="card-label">Official Low</div><div class="card-value">${fmt(eugene.tmin,0)}<span>°F</span></div><div class="card-sub">Normal: ${fmt(eugene.normal_tmin,0)}°F</div></div>
+        <div class="card"><div class="card-label">Official Precip</div><div class="card-value">${fmt(eugene.prcp,2)}<span>in</span></div><div class="card-sub">Wind: ${fmt(eugene.awnd,1)} mph</div></div>
+      </div>` : ''}
       <div class="section-label">Charts — Last ${rl}</div>
       <div class="charts-grid">
         <div class="chart-card"><div class="chart-header"><div class="chart-title">Temperature</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-feels)"></div>Feels Like</div></div></div><div class="chart-wrap"><canvas id="tempChart"></canvas></div></div>
@@ -404,22 +449,23 @@
           fetch(`${base}?select=temp_outdoor&temp_outdoor=not.is.null&recorded_at=gte.${start}&recorded_at=lt.${end}&limit=500`,{headers:H}).then(r=>r.json()),
         ]));
       }
-      const results=await Promise.all(fetches);
+      const[results, eugeneData]=await Promise.all([Promise.all(fetches), fetchEugeneMonthly(year)]);
       const data=results.map((r,i)=>{const[rainRes,highRes,lowRes,tempsRes]=r;return{month:monthNames[i],rain:rainRes[0]?.rain_monthly??null,high:highRes[0]?.temp_outdoor??null,low:lowRes[0]?.temp_outdoor??null,avgTemp:tempsRes.length?tempsRes.reduce((s,t)=>s+t.temp_outdoor,0)/tempsRes.length:null};});
-      monthlyCache={data,year};renderMonthlyTab();
+      monthlyCache={data,year,eugeneData};renderMonthlyTab();
     }catch(err){tc.innerHTML=`<div class="error">${err.message}</div>`;}
   }
   function renderMonthlyTab(){
-    const{data,year}=monthlyCache;
-    const tableRows=data.map(d=>`<tr><td>${d.month}</td><td>${fmt(d.rain,2)}</td><td>${fmt(d.avgTemp,1)}</td><td>${fmt(d.high,1)}</td><td>${fmt(d.low,1)}</td></tr>`).join('');
+    const{data,year,eugeneData}=monthlyCache;
+    const eMap={};(eugeneData||[]).forEach(e=>{eMap[e.month]=e;});
+    const tableRows=data.map(d=>{const e=eMap[d.month]||{};return`<tr><td>${d.month}</td><td>${fmt(d.rain,2)}</td><td>${fmt(e.rain,2)}</td><td>${fmt(d.avgTemp,1)}</td><td>${fmt(d.high,1)}</td><td>${fmt(d.low,1)}</td><td>${fmt(e.high,0)}</td><td>${fmt(e.low,0)}</td></tr>`;}).join('');
     document.getElementById('tab-content').innerHTML=`
       <div class="section-label">Monthly Overview — ${year}</div>
       <div class="charts-grid">
-        <div class="chart-card"><div class="chart-header"><div class="chart-title">Monthly Precipitation</div></div><div class="chart-wrap"><canvas id="monthlyRainChart"></canvas></div></div>
-        <div class="chart-card"><div class="chart-header"><div class="chart-title">Monthly Temperature</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>High</div><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind)"></div>Low</div></div></div><div class="chart-wrap"><canvas id="monthlyTempChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Monthly Precipitation</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-rain)"></div>Your Station</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Eugene Official</div></div></div><div class="chart-wrap"><canvas id="monthlyRainChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Monthly Temperature</div><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Your High</div><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Your Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--chart-wind)"></div>Your Low</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange);opacity:0.5"></div>Official High/Low</div></div></div><div class="chart-wrap"><canvas id="monthlyTempChart"></canvas></div></div>
       </div>
       <div class="monthly-table-wrap"><table class="monthly-table">
-        <thead><tr><th>Month</th><th>Rain (in)</th><th>Avg Temp (°F)</th><th>High (°F)</th><th>Low (°F)</th></tr></thead>
+        <thead><tr><th>Month</th><th>Your Rain</th><th>Official Rain</th><th>Avg Temp</th><th>Your High</th><th>Your Low</th><th>Official High</th><th>Official Low</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table></div>`;
     renderMonthlyCharts(data);
@@ -427,11 +473,20 @@
   function renderMonthlyCharts(data){
     if(charts.monthlyRain)charts.monthlyRain.destroy();if(charts.monthlyTemp)charts.monthlyTemp.destroy();
     const labels=data.map(d=>d.month),s=getComputedStyle(document.documentElement),d=getChartDefaults();
-    charts.monthlyRain=new Chart(document.getElementById('monthlyRainChart'),{type:'bar',data:{labels,datasets:[{label:'Rain',data:data.map(d=>d.rain),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderColor:s.getPropertyValue('--chart-rain').trim(),borderWidth:1,borderRadius:4}]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
+    const eMap={};(monthlyCache.eugeneData||[]).forEach(e=>{eMap[e.month]=e;});
+    const eugeneRain=labels.map(m=>eMap[m]?.rain??null);
+    const eugeneHigh=labels.map(m=>eMap[m]?.high??null);
+    const eugeneLow=labels.map(m=>eMap[m]?.low??null);
+    charts.monthlyRain=new Chart(document.getElementById('monthlyRainChart'),{type:'bar',data:{labels,datasets:[
+      {label:'Your Station',data:data.map(d=>d.rain),backgroundColor:s.getPropertyValue('--chart-rain-light').trim(),borderColor:s.getPropertyValue('--chart-rain').trim(),borderWidth:1,borderRadius:4},
+      {label:'Eugene Official',data:eugeneRain,backgroundColor:s.getPropertyValue('--orange').trim()+'99',borderColor:s.getPropertyValue('--orange').trim(),borderWidth:1,borderRadius:4}
+    ]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'"'}}}}});
     charts.monthlyTemp=new Chart(document.getElementById('monthlyTempChart'),{type:'line',data:{labels,datasets:[
-      {label:'High',data:data.map(d=>d.high),borderColor:s.getPropertyValue('--red').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
-      {label:'Avg',data:data.map(d=>d.avgTemp),borderColor:s.getPropertyValue('--accent').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
-      {label:'Low',data:data.map(d=>d.low),borderColor:s.getPropertyValue('--chart-wind').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false}
+      {label:'Your High',data:data.map(d=>d.high),borderColor:s.getPropertyValue('--red').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
+      {label:'Your Avg',data:data.map(d=>d.avgTemp),borderColor:s.getPropertyValue('--accent').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
+      {label:'Your Low',data:data.map(d=>d.low),borderColor:s.getPropertyValue('--chart-wind').trim(),borderWidth:2,pointRadius:3,tension:0.3,fill:false},
+      {label:'Official High',data:eugeneHigh,borderColor:s.getPropertyValue('--orange').trim(),borderWidth:2,pointRadius:3,tension:0.3,borderDash:[4,3],fill:false},
+      {label:'Official Low',data:eugeneLow,borderColor:s.getPropertyValue('--orange').trim(),borderWidth:1,pointRadius:2,tension:0.3,borderDash:[2,2],fill:false}
     ]},options:{...d,scales:{...d.scales,y:{...d.scales.y,ticks:{...d.scales.y.ticks,callback:v=>v+'°F'}}}}});
   }
 
@@ -441,14 +496,24 @@
     if(recordsCache.records){renderRecordsTab();return;}
     tc.innerHTML='<div class="loading">Loading records...</div>';
     try{
-      const[records,ytd]=await Promise.all([fetchRecords(),fetchYTD()]);
+      const[records,ytd,thisDay]=await Promise.all([fetchRecords(),fetchYTD(),fetchEugeneThisDay()]);
       const latestRes=await fetch(`${SUPABASE_URL}/rest/v1/weather_data?order=recorded_at.desc&limit=1`,{headers:H});
       const latest=(await latestRes.json())[0];
-      recordsCache={records,ytd,latest};renderRecordsTab();
+      recordsCache={records,ytd,latest,thisDay};renderRecordsTab();
     }catch(err){tc.innerHTML=`<div class="error">${err.message}</div>`;}
   }
   function renderRecordsTab(){
-    const{records,ytd,latest}=recordsCache;
+    const{records,ytd,latest,thisDay}=recordsCache;
+    const mmdd=new Date().toLocaleDateString([],{month:'long',day:'numeric'});
+    let thisDayHtml='';
+    if(thisDay&&thisDay.length){
+      const rows=thisDay.map(d=>`<tr><td>${d.date.substring(0,4)}</td><td>${fmt(d.tmax,0)}</td><td>${fmt(d.tmin,0)}</td><td>${fmt(d.prcp,2)}</td><td>${fmt(d.normal_tmax,0)}</td><td>${fmt(d.normal_tmin,0)}</td></tr>`).join('');
+      thisDayHtml=`<div class="section-label">This Day in History — ${mmdd} (Eugene Airport)</div>
+        <div class="monthly-table-wrap"><table class="monthly-table">
+        <thead><tr><th>Year</th><th>High (°F)</th><th>Low (°F)</th><th>Rain (in)</th><th>Normal High</th><th>Normal Low</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+    }
     document.getElementById('tab-content').innerHTML=`
       <div class="section-label">All-Time Records</div>
       <div class="records-grid">
@@ -463,7 +528,8 @@
         <div class="rain-card"><div class="card-label">This Week</div><div class="record-value">${fmt(latest?.rain_weekly,2)}<span> in</span></div></div>
         <div class="rain-card"><div class="card-label">This Month</div><div class="record-value">${fmt(latest?.rain_monthly,2)}<span> in</span></div></div>
         <div class="rain-card"><div class="card-label">YTD ${new Date().getFullYear()}</div><div class="record-value">${ytd}<span> in</span></div></div>
-      </div>`;
+      </div>
+      ${thisDayHtml}`;
   }
 
   // INIT
