@@ -467,7 +467,10 @@
     if(!startVal||!endVal)return;
     document.getElementById('explorer-results').innerHTML='<div class="loading">Searching...</div>';
     try{
-      const rows=await fetchRows(new Date(startVal).toISOString(),new Date(endVal+'T23:59:59').toISOString());
+      // Use local midnight, not UTC — startVal is 'YYYY-MM-DD', treat as local time
+      const startLocal = new Date(startVal + 'T00:00:00');
+      const endLocal = new Date(endVal + 'T23:59:59');
+      const rows=await fetchRows(startLocal.toISOString(),endLocal.toISOString());
       if(!rows.length){document.getElementById('explorer-results').innerHTML='<div class="error">No data found for this range.</div>';return;}
       explorerCache={rows,startVal,endVal};renderExplorerResults();
     }catch(err){document.getElementById('explorer-results').innerHTML=`<div class="error">${err.message}</div>`;}
@@ -475,7 +478,9 @@
   function renderExplorerResults(){
     const{rows,startVal,endVal}=explorerCache;const stats=computeRangeStats(rows);
     const days=Math.max(1,Math.round((new Date(endVal)-new Date(startVal))/86400000)+1);
-    const label=startVal===endVal?formatDate(startVal):`${formatDate(startVal)} — ${formatDate(endVal)} (${days} days)`;
+    // Format using local dates (append T00:00:00 to prevent UTC interpretation)
+    const fmtLocal = d => new Date(d+'T00:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+    const label=startVal===endVal?fmtLocal(startVal):`${fmtLocal(startVal)} — ${fmtLocal(endVal)} (${days} days)`;
     document.getElementById('explorer-results').innerHTML=`
       <div class="section-label">${label}</div>
       <div class="cards-grid">
