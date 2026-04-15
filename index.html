@@ -433,7 +433,7 @@
     try {
       const res = await fetch('https://api.weather.gov/stations/KEUG/observations/latest',{headers:{'User-Agent':'BirdFeatherWeather/1.0'}});
       const d = (await res.json()).properties;
-      return { condition: d.textDescription || '', icon: d.icon || '' };
+      return { condition: d.textDescription || '', icon: d.icon ? d.icon.replace('medium','large') : '' };
     } catch(e) { return { condition: '', icon: '' }; }
   }
   async function fetchSunriseSunset() {
@@ -513,7 +513,7 @@
           <div class="hero-temp ${getTempColor(temp)}">${fmt(temp,0)}<span>°F</span></div>
         </div>
         <div class="hero-details">
-          <div class="hero-condition">${condition || 'Current Conditions'}</div>
+          <div class="hero-condition">${nwsCond?.icon ? `<img src="${nwsCond.icon}" alt="${condition}" style="width:48px;height:48px;vertical-align:middle;margin-right:6px;border-radius:8px">` : ''}${condition || 'Current Conditions'}</div>
           <div class="hero-sub">Feels like ${fmt(latest.feels_like,1)}°F &bull; Dew point ${fmt(latest.dew_point,1)}°F</div>
           ${stats.hot && stats.cold ? `<div class="hero-range">
             <span>${fmt(stats.cold.temp_outdoor,0)}°</span>
