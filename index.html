@@ -508,15 +508,16 @@
         <button class="time-btn ${currentRange===365?'active':''}" onclick="setRange(365)">1Y</button>
       </div>
 
+      <div class="section-label">Current Conditions <span class="info-tip">?<span class="tip-text">Live readings from your personal weather station, updated every 5 minutes. Weather condition and icon from the National Weather Service (Eugene Airport).</span></span></div>
       <div class="hero">
         <div>
           <div class="hero-temp ${getTempColor(temp)}">${fmt(temp,0)}<span>°F</span></div>
-        </div>
-        <div class="hero-details">
-          <div class="hero-condition"><span style="font-size:1.6rem;vertical-align:middle;margin-right:6px">${(()=>{
+          <div class="hero-condition">${(()=>{
             const c = (condition||'').toLowerCase();
             if(c.includes('thunder'))return'⛈️';if(c.includes('rain')||c.includes('shower')||c.includes('drizzle'))return'🌧️';if(c.includes('snow'))return'🌨️';if(c.includes('fog')||c.includes('mist')||c.includes('haze'))return'🌫️';if(c.includes('overcast'))return'☁️';if(c.includes('mostly cloudy'))return'🌥️';if(c.includes('partly'))return'⛅';if(c.includes('cloud'))return'☁️';if(c.includes('clear')||c.includes('sunny')||c.includes('fair'))return'☀️';return'🌤️';
-          })()}</span>${condition || 'Current Conditions'}</div>
+          })()} ${condition || ''}</div>
+        </div>
+        <div class="hero-details">
           <div class="hero-sub">Feels like ${fmt(latest.feels_like,1)}°F &bull; Dew point ${fmt(latest.dew_point,1)}°F</div>
           ${stats.hot && stats.cold ? `<div class="hero-range">
             <span>${fmt(stats.cold.temp_outdoor,0)}°</span>
@@ -525,6 +526,7 @@
           </div>` : ''}
           ${sunData ? `<div class="hero-sub" style="margin-top:4px">☀ ${sunData.sunrise} &nbsp; ☽ ${sunData.sunset} &nbsp; ${sunData.dayLength}</div>` : ''}
         </div>
+        ${nwsCond?.icon ? `<div style="flex-shrink:0"><img src="${nwsCond.icon}" alt="${condition}" style="width:80px;height:80px;border-radius:12px" onerror="this.style.display='none'"></div>` : ''}
         ${nws || todayNormal ? `<div style="text-align:right">
           <div class="hero-sub" style="font-weight:600">Eugene Airport</div>
           ${nws ? `<div class="hero-sub">High: ${fmt(nws.high,0)}°F &bull; Low: ${fmt(nws.low,0)}°F</div>` : ''}
