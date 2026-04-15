@@ -12,7 +12,7 @@ HEADERS_SUPA = {
     'apikey': SUPABASE_KEY,
     'Authorization': f'Bearer {SUPABASE_KEY}',
     'Content-Type': 'application/json',
-    'Prefer': 'resolution=merge-duplicates'
+    'Prefer': 'resolution=ignore-duplicates'
 }
 
 def fetch_daily_data(start_date, end_date):
