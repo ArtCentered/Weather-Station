@@ -139,6 +139,54 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .error { background: rgba(229,62,62,0.1); border: 1px solid rgba(229,62,62,0.3); border-radius: 8px; padding: 14px; color: var(--red); font-size: 0.85rem; margin-bottom: 16px; }
   footer { text-align: center; margin-top: 36px; color: var(--text-muted); font-size: 0.75rem; }
+
+  /* Hero section */
+  .hero { display: flex; align-items: center; gap: 24px; padding: 24px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 16px; flex-wrap: wrap; transition: background 0.3s; }
+  .hero-temp { font-size: 4rem; font-weight: 800; line-height: 1; }
+  .hero-temp span { font-size: 1.5rem; font-weight: 400; vertical-align: top; }
+  .hero-details { flex: 1; min-width: 150px; }
+  .hero-condition { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .hero-sub { font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; }
+  .hero-range { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.8rem; }
+  .hero-range-bar { flex: 1; height: 6px; background: var(--border-color); border-radius: 3px; position: relative; max-width: 120px; }
+  .hero-range-fill { position: absolute; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--orange)); }
+  .temp-cold { color: #3182ce; }
+  .temp-mild { color: #38a169; }
+  .temp-warm { color: #dd6b20; }
+  .temp-hot { color: #e53e3e; }
+
+  /* Highlight cards */
+  .highlights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 16px; }
+  @media (max-width: 768px) { .highlights { grid-template-columns: repeat(2, 1fr); } }
+  .hl-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); text-align: center; transition: background 0.3s; }
+  .hl-card .card-label { margin-bottom: 12px; }
+  .hl-icon { margin-bottom: 8px; }
+  .hl-value { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .hl-value span { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+  .hl-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
+
+  /* Compass */
+  .compass { width: 80px; height: 80px; position: relative; margin: 0 auto 8px; }
+  .compass-ring { width: 100%; height: 100%; border: 2px solid var(--border-color); border-radius: 50%; position: relative; }
+  .compass-dirs { position: absolute; inset: 0; font-size: 9px; color: var(--text-muted); font-weight: 600; }
+  .compass-dirs span { position: absolute; }
+  .compass-dirs .c-n { top: 2px; left: 50%; transform: translateX(-50%); }
+  .compass-dirs .c-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+  .compass-dirs .c-e { right: 4px; top: 50%; transform: translateY(-50%); }
+  .compass-dirs .c-w { left: 4px; top: 50%; transform: translateY(-50%); }
+  .compass-arrow { position: absolute; top: 50%; left: 50%; width: 3px; height: 30px; background: var(--red); border-radius: 2px; transform-origin: bottom center; transform: translate(-50%, -100%) rotate(0deg); transition: transform 0.5s; }
+  .compass-dot { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--text-primary); border-radius: 50%; transform: translate(-50%, -50%); }
+
+  /* SVG gauges */
+  .gauge-svg { display: block; margin: 0 auto; }
+
+  /* Indoor house */
+  .indoor-house { display: flex; gap: 15px; margin-bottom: 16px; }
+  .indoor-floor { flex: 1; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); text-align: center; transition: background 0.3s; }
+  .indoor-floor .floor-icon { font-size: 1.5rem; margin-bottom: 4px; }
+  .indoor-floor .floor-temp { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+  .indoor-floor .floor-temp span { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+  .indoor-floor .floor-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
   .info-tip {
     display: inline-flex; align-items: center; justify-content: center;
     width: 16px; height: 16px; background: var(--accent); color: #fff;
@@ -367,6 +415,42 @@
     return await res.json();
   }
 
+  // VISUAL HELPERS
+  function getTempColor(t) { if(t==null)return''; if(t<40)return'temp-cold'; if(t<65)return'temp-mild'; if(t<85)return'temp-warm'; return'temp-hot'; }
+  function getUVColor(uv) { if(uv<=2)return'#38a169'; if(uv<=5)return'#d69e2e'; if(uv<=7)return'#dd6b20'; if(uv<=10)return'#e53e3e'; return'#805ad5'; }
+  function getPressureTrend(rows) {
+    const recent = rows.filter(r=>r.pressure_relative!=null).slice(-36); // last 3 hours
+    if(recent.length<2) return '→';
+    const first = recent[0].pressure_relative, last = recent[recent.length-1].pressure_relative;
+    const diff = last - first;
+    if(diff > 0.03) return '↑'; if(diff < -0.03) return '↓'; return '→';
+  }
+  async function fetchNWSConditions() {
+    try {
+      const res = await fetch('https://api.weather.gov/stations/KEUG/observations/latest',{headers:{'User-Agent':'BirdFeatherWeather/1.0'}});
+      const d = (await res.json()).properties;
+      return { condition: d.textDescription || '', icon: d.icon || '' };
+    } catch(e) { return { condition: '', icon: '' }; }
+  }
+  async function fetchSunriseSunset() {
+    try {
+      const res = await fetch('https://api.sunrise-sunset.org/json?lat=44.1331&lng=-123.2156&formatted=0&date=today');
+      const d = (await res.json()).results;
+      const rise = new Date(d.sunrise).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+      const set = new Date(d.sunset).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+      const hrs = Math.floor(d.day_length/3600), mins = Math.round((d.day_length%3600)/60);
+      return { sunrise: rise, sunset: set, dayLength: `${hrs}h ${mins}m` };
+    } catch(e) { return null; }
+  }
+  function makeHumidityRing(pct) {
+    const r=28, circ=2*Math.PI*r, offset=circ*(1-pct/100);
+    return `<svg class="gauge-svg" width="70" height="70" viewBox="0 0 70 70"><circle cx="35" cy="35" r="${r}" fill="none" stroke="var(--border-color)" stroke-width="5"/><circle cx="35" cy="35" r="${r}" fill="none" stroke="var(--accent)" stroke-width="5" stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 35 35)"/></svg>`;
+  }
+  function makeUVGauge(uv) {
+    const maxUV=12, angle=Math.min(uv/maxUV,1)*180, color=getUVColor(uv);
+    return `<svg class="gauge-svg" width="90" height="55" viewBox="0 0 90 55"><path d="M10,50 A35,35 0 0,1 80,50" fill="none" stroke="var(--border-color)" stroke-width="6" stroke-linecap="round"/><path d="M10,50 A35,35 0 0,1 80,50" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${angle*Math.PI*35/180} 999"/></svg>`;
+  }
+
   // TAB SYSTEM
   function switchTab(name){
     activeTab=name;
@@ -391,20 +475,26 @@
       } else {
         since = new Date(Date.now() - currentRange * 86400000).toISOString();
       }
-      const[rows,allRec,ytd,eugeneData]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD(),fetchEugeneToday()]);
+      const[rows,allRec,ytd,eugeneData,nwsCond,sunData]=await Promise.all([fetchRows(since),fetchRecords(),fetchYTD(),fetchEugeneToday(),fetchNWSConditions(),fetchSunriseSunset()]);
       if(!rows.length)throw new Error('No data found.');
       const latest=rows[rows.length-1];
       document.getElementById('last-updated').textContent=`Last updated: ${new Date(latest.recorded_at).toLocaleString()}`;
-      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows),eugeneData};
+      liveCache={rows,latest,allRec,ytd,stats:computeRangeStats(rows),eugeneData,nwsCond,sunData};
       renderLiveTab();
     }catch(err){document.getElementById('error-box').innerHTML=`<div class="error">${err.message}</div>`;tc.innerHTML='';}
   }
   function renderLiveTab(){
-    const{rows,latest,allRec,ytd,stats,eugeneData}=liveCache;
+    const{rows,latest,allRec,ytd,stats,eugeneData,nwsCond,sunData}=liveCache;
     const nws = eugeneData?.nwsToday;
     const todayNormal = eugeneData?.todayNormal;
     const noaaFallback = eugeneData?.noaaLatest;
     const rl=currentRange==='today'?'Today':currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
+    const temp = latest.temp_outdoor;
+    const pressTrend = getPressureTrend(rows);
+    const windDeg = latest.wind_direction ?? 0;
+    const condition = nwsCond?.condition || '';
+    const uv = latest.uv_index ?? 0;
+
     document.getElementById('tab-content').innerHTML=`
       <div class="time-controls">
         <button class="time-btn ${currentRange==='today'?'active':''}" onclick="setRange('today')">Today</button>
@@ -413,19 +503,69 @@
         <button class="time-btn ${currentRange===30?'active':''}" onclick="setRange(30)">30D</button>
         <button class="time-btn ${currentRange===365?'active':''}" onclick="setRange(365)">1Y</button>
       </div>
-      <div class="section-label">Current Conditions <span class="info-tip">?<span class="tip-text">Live outdoor readings from your personal weather station. Updates every 5 minutes via Ambient Weather Network.</span></span></div>
-      <div class="cards-grid">
-        <div class="card"><div class="card-label">Temperature</div><div class="card-value">${fmt(latest.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">Feels like: ${fmt(latest.feels_like,1)}°F</div></div>
-        <div class="card"><div class="card-label">Wind</div><div class="card-value">${fmt(latest.wind_speed,1)}<span>mph</span></div><div class="card-sub">Gust: ${fmt(latest.wind_gust,1)} mph<br>${windDir(latest.wind_direction)}</div></div>
-        <div class="card"><div class="card-label">Humidity</div><div class="card-value">${latest.humidity_outdoor??'--'}<span>%</span></div><div class="card-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div></div>
-        <div class="card"><div class="card-label">Pressure</div><div class="card-value">${fmt(latest.pressure_relative,2)}<span>in</span></div><div class="card-sub">Absolute: ${fmt(latest.pressure_absolute,2)} in</div></div>
-        <div class="card"><div class="card-label">UV Index</div><div class="card-value">${latest.uv_index??'--'}</div><div class="card-sub">Solar: ${fmt(latest.solar_radiation,1)} W/m²</div></div>
+
+      <div class="hero">
+        <div>
+          <div class="hero-temp ${getTempColor(temp)}">${fmt(temp,0)}<span>°F</span></div>
+        </div>
+        <div class="hero-details">
+          <div class="hero-condition">${condition || 'Current Conditions'}</div>
+          <div class="hero-sub">Feels like ${fmt(latest.feels_like,1)}°F &bull; Dew point ${fmt(latest.dew_point,1)}°F</div>
+          ${stats.hot && stats.cold ? `<div class="hero-range">
+            <span>${fmt(stats.cold.temp_outdoor,0)}°</span>
+            <div class="hero-range-bar"><div class="hero-range-fill" style="left:0;width:${Math.round((temp-(stats.cold?.temp_outdoor||0))/((stats.hot?.temp_outdoor||100)-(stats.cold?.temp_outdoor||0))*100)}%"></div></div>
+            <span>${fmt(stats.hot.temp_outdoor,0)}°</span>
+          </div>` : ''}
+          ${sunData ? `<div class="hero-sub" style="margin-top:4px">☀ ${sunData.sunrise} &nbsp; ☽ ${sunData.sunset} &nbsp; ${sunData.dayLength}</div>` : ''}
+        </div>
+        ${nws || todayNormal ? `<div style="text-align:right">
+          <div class="hero-sub" style="font-weight:600">Eugene Airport</div>
+          ${nws ? `<div class="hero-sub">High: ${fmt(nws.high,0)}°F &bull; Low: ${fmt(nws.low,0)}°F</div>` : ''}
+          ${todayNormal ? `<div class="hero-sub">Normal: ${fmt(todayNormal.normal_tmax,0)}° / ${fmt(todayNormal.normal_tmin,0)}°F</div>` : ''}
+        </div>` : ''}
       </div>
-      <div class="section-label">Indoor <span class="info-tip">?<span class="tip-text">Upstairs is the base station console. Downstairs is the wireless sensor (sensor 2). Air quality coming soon via PurpleAir.</span></span></div>
-      <div class="cards-grid">
-        <div class="card"><div class="card-label">Upstairs</div><div class="card-value">${fmt(latest.temp_indoor,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_indoor??'--'}%</div></div>
-        <div class="card"><div class="card-label">Downstairs</div><div class="card-value">${fmt(latest.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">Humidity: ${latest.humidity_sensor2??'--'}%</div></div>
+
+      <div class="highlights">
+        <div class="hl-card">
+          <div class="card-label">Wind</div>
+          <div class="compass"><div class="compass-ring"><div class="compass-dirs"><span class="c-n">N</span><span class="c-s">S</span><span class="c-e">E</span><span class="c-w">W</span></div><div class="compass-arrow" style="transform:translate(-50%,-100%) rotate(${windDeg}deg)"></div><div class="compass-dot"></div></div></div>
+          <div class="hl-value">${fmt(latest.wind_speed,1)} <span>mph</span></div>
+          <div class="hl-sub">Gust: ${fmt(latest.wind_gust,1)} mph &bull; ${windDir(latest.wind_direction)}</div>
+        </div>
+        <div class="hl-card">
+          <div class="card-label">Humidity</div>
+          <div class="hl-icon">${makeHumidityRing(latest.humidity_outdoor??0)}</div>
+          <div class="hl-value">${latest.humidity_outdoor??'--'}<span>%</span></div>
+          <div class="hl-sub">Dew point: ${fmt(latest.dew_point,1)}°F</div>
+        </div>
+        <div class="hl-card">
+          <div class="card-label">UV Index</div>
+          <div class="hl-icon">${makeUVGauge(uv)}</div>
+          <div class="hl-value" style="color:${getUVColor(uv)}">${uv}</div>
+          <div class="hl-sub">${uv<=2?'Low':uv<=5?'Moderate':uv<=7?'High':uv<=10?'Very High':'Extreme'}</div>
+        </div>
+        <div class="hl-card">
+          <div class="card-label">Pressure</div>
+          <div class="hl-icon" style="font-size:2rem;color:var(--text-muted)">${pressTrend==='↑'?'⬆':''}${pressTrend==='↓'?'⬇':''}${pressTrend==='→'?'➡':''}</div>
+          <div class="hl-value">${fmt(latest.pressure_relative,2)} <span>in</span></div>
+          <div class="hl-sub">${pressTrend==='↑'?'Rising':pressTrend==='↓'?'Falling':'Steady'} &bull; Solar: ${fmt(latest.solar_radiation,0)} W/m²</div>
+        </div>
+        <div class="hl-card">
+          <div class="card-label">Rain Today</div>
+          <div class="hl-icon" style="font-size:2rem">${latest.rain_daily>0?'🌧':'💧'}</div>
+          <div class="hl-value">${fmt(latest.rain_daily,2)} <span>in</span></div>
+          <div class="hl-sub">Rate: ${fmt(latest.rain_hourly,2)} in/hr</div>
+        </div>
+        <div class="hl-card">
+          <div class="card-label">Indoor</div>
+          <div style="display:flex;gap:12px;justify-content:center;margin:8px 0">
+            <div><div class="hl-sub">Upstairs</div><div style="font-size:1.2rem;font-weight:700;color:var(--text-primary)">${fmt(latest.temp_indoor,0)}°</div><div class="hl-sub">${latest.humidity_indoor??'--'}%</div></div>
+            <div style="width:1px;background:var(--border-color)"></div>
+            <div><div class="hl-sub">Downstairs</div><div style="font-size:1.2rem;font-weight:700;color:var(--text-primary)">${fmt(latest.temp_sensor2,0)}°</div><div class="hl-sub">${latest.humidity_sensor2??'--'}%</div></div>
+          </div>
+        </div>
       </div>
+
       <div class="section-label">${rl} Summary <span class="info-tip">?<span class="tip-text">${currentRange==='today'?"Shows today's weather from midnight to now — temperature, rain, and wind for the current calendar day.":"High, low, and average conditions computed from your station's data over the selected time period."}</span></span></div>
       <div class="cards-grid">
         <div class="card"><div class="card-label">High Temp</div><div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.hot?formatDate(stats.hot.recorded_at):'--'}</div></div>
@@ -435,18 +575,6 @@
         <div class="card"><div class="card-label">Rainiest Day</div><div class="card-value">${fmt(stats.rainRow?.rain_daily,2)}<span>in</span></div><div class="card-sub">${stats.rainRow?formatDate(stats.rainRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Max Rain Rate</div><div class="card-value">${fmt(stats.maxRainRate,2)}<span>in/hr</span></div><div class="card-sub">${stats.maxRainRateRow?formatDate(stats.maxRainRateRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
-      </div>
-      <div class="section-label">Eugene Airport${nws ? ' — Live' : noaaFallback ? ` — ${formatDate(noaaFallback.date)}` : ''} <span class="info-tip">?<span class="tip-text">Official data from Eugene Mahlon Sweet Field Airport (KEUG). Live readings from the National Weather Service. "Normal" is the 30-year climate average (1981-2010).</span></span></div>
-      <div class="cards-grid">
-        ${nws ? `
-          <div class="card"><div class="card-label">Today's High (so far)</div><div class="card-value">${fmt(nws.high,1)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmax,0)}°F` : ''}</div></div>
-          <div class="card"><div class="card-label">Today's Low (so far)</div><div class="card-value">${fmt(nws.low,1)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmin,0)}°F` : ''}</div></div>
-          ${nws.yesterdayHigh ? `<div class="card"><div class="card-label">Yesterday's High</div><div class="card-value">${fmt(nws.yesterdayHigh,1)}<span>°F</span></div><div class="card-sub">Low: ${fmt(nws.yesterdayLow,1)}°F</div></div>` : ''}
-        ` : noaaFallback ? `
-          <div class="card"><div class="card-label">Official High</div><div class="card-value">${fmt(noaaFallback.tmax,0)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmax,0)}°F` : ''}</div></div>
-          <div class="card"><div class="card-label">Official Low</div><div class="card-value">${fmt(noaaFallback.tmin,0)}<span>°F</span></div><div class="card-sub">${todayNormal ? `Normal: ${fmt(todayNormal.normal_tmin,0)}°F` : ''}</div></div>
-          <div class="card"><div class="card-label">Official Precip</div><div class="card-value">${fmt(noaaFallback.prcp,2)}<span>in</span></div><div class="card-sub">Wind: ${fmt(noaaFallback.awnd,1)} mph</div></div>
-        ` : `<div class="card"><div class="card-label">Normal High</div><div class="card-value">${fmt(todayNormal?.normal_tmax,0)}<span>°F</span></div><div class="card-sub">Normal low: ${fmt(todayNormal?.normal_tmin,0)}°F</div></div>`}
       </div>
       <div class="section-label">Charts — Last ${rl}</div>
       <div class="charts-grid">
