@@ -404,10 +404,10 @@
     const nws = eugeneData?.nwsToday;
     const todayNormal = eugeneData?.todayNormal;
     const noaaFallback = eugeneData?.noaaLatest;
-    const rl=currentRange==='today'?"Mike's Midnight-to-Midnight":currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
+    const rl=currentRange==='today'?'Today':currentRange===1?'24 Hours':currentRange===7?'7 Days':currentRange===30?'30 Days':'12 Months';
     document.getElementById('tab-content').innerHTML=`
       <div class="time-controls">
-        <button class="time-btn ${currentRange==='today'?'active':''}" onclick="setRange('today')" title="Mike's Midnight-to-Midnight">M-Day</button>
+        <button class="time-btn ${currentRange==='today'?'active':''}" onclick="setRange('today')">Today</button>
         <button class="time-btn ${currentRange===1?'active':''}" onclick="setRange(1)">24H</button>
         <button class="time-btn ${currentRange===7?'active':''}" onclick="setRange(7)">7D</button>
         <button class="time-btn ${currentRange===30?'active':''}" onclick="setRange(30)">30D</button>
