@@ -513,7 +513,10 @@
           <div class="hero-temp ${getTempColor(temp)}">${fmt(temp,0)}<span>°F</span></div>
         </div>
         <div class="hero-details">
-          <div class="hero-condition">${nwsCond?.icon ? `<img src="${nwsCond.icon}" alt="${condition}" style="width:48px;height:48px;vertical-align:middle;margin-right:6px;border-radius:8px">` : ''}${condition || 'Current Conditions'}</div>
+          <div class="hero-condition"><span style="font-size:1.6rem;vertical-align:middle;margin-right:6px">${(()=>{
+            const c = (condition||'').toLowerCase();
+            if(c.includes('thunder'))return'⛈️';if(c.includes('rain')||c.includes('shower')||c.includes('drizzle'))return'🌧️';if(c.includes('snow'))return'🌨️';if(c.includes('fog')||c.includes('mist')||c.includes('haze'))return'🌫️';if(c.includes('overcast'))return'☁️';if(c.includes('mostly cloudy'))return'🌥️';if(c.includes('partly'))return'⛅';if(c.includes('cloud'))return'☁️';if(c.includes('clear')||c.includes('sunny')||c.includes('fair'))return'☀️';return'🌤️';
+          })()}</span>${condition || 'Current Conditions'}</div>
           <div class="hero-sub">Feels like ${fmt(latest.feels_like,1)}°F &bull; Dew point ${fmt(latest.dew_point,1)}°F</div>
           ${stats.hot && stats.cold ? `<div class="hero-range">
             <span>${fmt(stats.cold.temp_outdoor,0)}°</span>
