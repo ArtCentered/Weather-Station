@@ -174,8 +174,12 @@
   .compass-dirs .c-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
   .compass-dirs .c-e { right: 4px; top: 50%; transform: translateY(-50%); }
   .compass-dirs .c-w { left: 4px; top: 50%; transform: translateY(-50%); }
-  .compass-arrow { position: absolute; top: 50%; left: 50%; width: 3px; height: 30px; background: var(--red); border-radius: 2px; transform-origin: bottom center; transform: translate(-50%, -100%) rotate(0deg); transition: transform 0.5s; }
-  .compass-dot { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--text-primary); border-radius: 50%; transform: translate(-50%, -50%); }
+  .compass-arrow { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-origin: 0px 0px; transform: rotate(0deg); transition: transform 0.8s ease-in-out; }
+  .compass-arrow::before { content: ''; position: absolute; top: -28px; left: -5px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 28px solid var(--accent); }
+  .compass-arrow::after { content: ''; position: absolute; top: 0; left: -3px; width: 6px; height: 16px; background: var(--text-muted); border-radius: 0 0 3px 3px; opacity: 0.4; }
+  .compass-dot { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--text-primary); border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; }
+  @keyframes windSway { 0%,100%{transform:rotate(var(--wind-deg))} 25%{transform:rotate(calc(var(--wind-deg) + 3deg))} 75%{transform:rotate(calc(var(--wind-deg) - 3deg))} }
+  .compass-arrow.sway { animation: windSway 4s ease-in-out infinite; }
 
   /* SVG gauges */
   .gauge-svg { display: block; margin: 0 auto; }
@@ -528,7 +532,7 @@
       <div class="highlights">
         <div class="hl-card">
           <div class="card-label">Wind</div>
-          <div class="compass"><div class="compass-ring"><div class="compass-dirs"><span class="c-n">N</span><span class="c-s">S</span><span class="c-e">E</span><span class="c-w">W</span></div><div class="compass-arrow" style="transform:translate(-50%,-100%) rotate(${windDeg}deg)"></div><div class="compass-dot"></div></div></div>
+          <div class="compass"><div class="compass-ring"><div class="compass-dirs"><span class="c-n">N</span><span class="c-s">S</span><span class="c-e">E</span><span class="c-w">W</span></div><div class="compass-arrow sway" style="--wind-deg:${windDeg}deg"></div><div class="compass-dot"></div></div></div>
           <div class="hl-value">${fmt(latest.wind_speed,1)} <span>mph</span></div>
           <div class="hl-sub">Gust: ${fmt(latest.wind_gust,1)} mph &bull; ${windDir(latest.wind_direction)}</div>
         </div>
