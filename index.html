@@ -237,17 +237,17 @@
     const avgHumidity=humids.length?humids.reduce((s,r)=>s+r.humidity_outdoor,0)/humids.length:null;
     const dailyMaxRain={};for(const r of valid(rows,'rain_daily')){const day=r.recorded_at.substring(0,10);if(!dailyMaxRain[day]||r.rain_daily>dailyMaxRain[day])dailyMaxRain[day]=r.rain_daily;}
     const totalRain=Object.values(dailyMaxRain).reduce((s,v)=>s+v,0);
-    let maxRainRate=0;for(const r of rains){if(r.rain_hourly>maxRainRate)maxRainRate=r.rain_hourly;}
-    // Indoor stats
+    let maxRainRate=0,maxRainRateRow=null;for(const r of rains){if(r.rain_hourly>maxRainRate){maxRainRate=r.rain_hourly;maxRainRateRow=r;}}
+    // Indoor stats (track full rows for dates)
     const indoorTemps = valid(rows,'temp_indoor');
     const avgIndoor = indoorTemps.length ? indoorTemps.reduce((s,r)=>s+r.temp_indoor,0)/indoorTemps.length : null;
-    let indoorHigh = null, indoorLow = null;
-    for (const r of indoorTemps) { if (!indoorHigh||r.temp_indoor>indoorHigh) indoorHigh=r.temp_indoor; if (!indoorLow||r.temp_indoor<indoorLow) indoorLow=r.temp_indoor; }
+    let indoorHighRow = null, indoorLowRow = null;
+    for (const r of indoorTemps) { if (!indoorHighRow||r.temp_indoor>indoorHighRow.temp_indoor) indoorHighRow=r; if (!indoorLowRow||r.temp_indoor<indoorLowRow.temp_indoor) indoorLowRow=r; }
     const sensor2Temps = valid(rows,'temp_sensor2');
     const avgSensor2 = sensor2Temps.length ? sensor2Temps.reduce((s,r)=>s+r.temp_sensor2,0)/sensor2Temps.length : null;
-    let sensor2High = null, sensor2Low = null;
-    for (const r of sensor2Temps) { if (!sensor2High||r.temp_sensor2>sensor2High) sensor2High=r.temp_sensor2; if (!sensor2Low||r.temp_sensor2<sensor2Low) sensor2Low=r.temp_sensor2; }
-    return{hot:hotRow,cold:coldRow,gustRow,rainRow,avgTemp,avgWind,avgHumidity,totalRain,maxRainRate,avgIndoor,indoorHigh,indoorLow,avgSensor2,sensor2High,sensor2Low};
+    let sensor2HighRow = null, sensor2LowRow = null;
+    for (const r of sensor2Temps) { if (!sensor2HighRow||r.temp_sensor2>sensor2HighRow.temp_sensor2) sensor2HighRow=r; if (!sensor2LowRow||r.temp_sensor2<sensor2LowRow.temp_sensor2) sensor2LowRow=r; }
+    return{hot:hotRow,cold:coldRow,gustRow,rainRow,maxRainRateRow,avgTemp,avgWind,avgHumidity,totalRain,maxRainRate,avgIndoor,indoorHighRow,indoorLowRow,avgSensor2,sensor2HighRow,sensor2LowRow};
   }
 
   async function fetchRows(since,until){
@@ -431,9 +431,10 @@
         <div class="card"><div class="card-label">High Temp</div><div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.hot?formatDate(stats.hot.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Low Temp</div><div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.cold?formatDate(stats.cold.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Temp</div><div class="card-value">${fmt(stats.avgTemp,1)}<span>°F</span></div><div class="card-sub">Avg humidity: ${fmt(stats.avgHumidity,0)}%</div></div>
-        <div class="card"><div class="card-label">Total Rain</div><div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div><div class="card-sub">Max rate: ${fmt(stats.maxRainRate,2)} in/hr</div></div>
+        <div class="card"><div class="card-label">Total Rain</div><div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div><div class="card-sub">Avg wind: ${fmt(stats.avgWind,1)} mph</div></div>
+        <div class="card"><div class="card-label">Rainiest Day</div><div class="card-value">${fmt(stats.rainRow?.rain_daily,2)}<span>in</span></div><div class="card-sub">${stats.rainRow?formatDate(stats.rainRow.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Max Rain Rate</div><div class="card-value">${fmt(stats.maxRainRate,2)}<span>in/hr</span></div><div class="card-sub">${stats.maxRainRateRow?formatDate(stats.maxRainRateRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
-        <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
       <div class="section-label">Eugene Airport${nws ? ' — Live' : noaaFallback ? ` — ${formatDate(noaaFallback.date)}` : ''} <span class="info-tip">?<span class="tip-text">Official data from Eugene Mahlon Sweet Field Airport (KEUG). Live readings from the National Weather Service. "Normal" is the 30-year climate average (1981-2010).</span></span></div>
       <div class="cards-grid">
@@ -542,14 +543,23 @@
         <div class="card"><div class="card-label">High Temp</div><div class="card-value">${fmt(stats.hot?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.hot?formatDate(stats.hot.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Low Temp</div><div class="card-value">${fmt(stats.cold?.temp_outdoor,1)}<span>°F</span></div><div class="card-sub">${stats.cold?formatDate(stats.cold.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Avg Temp</div><div class="card-value">${fmt(stats.avgTemp,1)}<span>°F</span></div><div class="card-sub">Avg humidity: ${fmt(stats.avgHumidity,0)}%</div></div>
-        <div class="card"><div class="card-label">Total Rain</div><div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div><div class="card-sub">Max rate: ${fmt(stats.maxRainRate,2)} in/hr</div></div>
+        <div class="card"><div class="card-label">Total Rain</div><div class="card-value">${fmt(stats.totalRain,2)}<span>in</span></div><div class="card-sub">Avg wind: ${fmt(stats.avgWind,1)} mph</div></div>
+        <div class="card"><div class="card-label">Rainiest Day</div><div class="card-value">${fmt(stats.rainRow?.rain_daily,2)}<span>in</span></div><div class="card-sub">${stats.rainRow?formatDate(stats.rainRow.recorded_at):'--'}</div></div>
+        <div class="card"><div class="card-label">Max Rain Rate</div><div class="card-value">${fmt(stats.maxRainRate,2)}<span>in/hr</span></div><div class="card-sub">${stats.maxRainRateRow?formatDate(stats.maxRainRateRow.recorded_at):'--'}</div></div>
         <div class="card"><div class="card-label">Max Gust</div><div class="card-value">${fmt(stats.gustRow?.wind_gust,1)}<span>mph</span></div><div class="card-sub">${stats.gustRow?formatDate(stats.gustRow.recorded_at):'--'}</div></div>
-        <div class="card"><div class="card-label">Avg Wind</div><div class="card-value">${fmt(stats.avgWind,1)}<span>mph</span></div><div class="card-sub">Rainiest day: ${fmt(stats.rainRow?.rain_daily,2)} in</div></div>
       </div>
       ${stats.avgIndoor!=null||stats.avgSensor2!=null?`<div class="section-label">Indoor</div>
       <div class="cards-grid">
-        ${stats.avgIndoor!=null?`<div class="card"><div class="card-label">Upstairs Avg</div><div class="card-value">${fmt(stats.avgIndoor,1)}<span>°F</span></div><div class="card-sub">High: ${fmt(stats.indoorHigh,1)}°F / Low: ${fmt(stats.indoorLow,1)}°F</div></div>`:''}
-        ${stats.avgSensor2!=null?`<div class="card"><div class="card-label">Downstairs Avg</div><div class="card-value">${fmt(stats.avgSensor2,1)}<span>°F</span></div><div class="card-sub">High: ${fmt(stats.sensor2High,1)}°F / Low: ${fmt(stats.sensor2Low,1)}°F</div></div>`:''}
+        ${stats.avgIndoor!=null?`
+          <div class="card"><div class="card-label">Upstairs Avg</div><div class="card-value">${fmt(stats.avgIndoor,1)}<span>°F</span></div></div>
+          <div class="card"><div class="card-label">Upstairs High</div><div class="card-value">${fmt(stats.indoorHighRow?.temp_indoor,1)}<span>°F</span></div><div class="card-sub">${stats.indoorHighRow?formatDate(stats.indoorHighRow.recorded_at):'--'}</div></div>
+          <div class="card"><div class="card-label">Upstairs Low</div><div class="card-value">${fmt(stats.indoorLowRow?.temp_indoor,1)}<span>°F</span></div><div class="card-sub">${stats.indoorLowRow?formatDate(stats.indoorLowRow.recorded_at):'--'}</div></div>
+        `:''}
+        ${stats.avgSensor2!=null?`
+          <div class="card"><div class="card-label">Downstairs Avg</div><div class="card-value">${fmt(stats.avgSensor2,1)}<span>°F</span></div></div>
+          <div class="card"><div class="card-label">Downstairs High</div><div class="card-value">${fmt(stats.sensor2HighRow?.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">${stats.sensor2HighRow?formatDate(stats.sensor2HighRow.recorded_at):'--'}</div></div>
+          <div class="card"><div class="card-label">Downstairs Low</div><div class="card-value">${fmt(stats.sensor2LowRow?.temp_sensor2,1)}<span>°F</span></div><div class="card-sub">${stats.sensor2LowRow?formatDate(stats.sensor2LowRow.recorded_at):'--'}</div></div>
+        `:''}
       </div>`:''}
       <div class="section-label">Temperature vs Climate Normal <span class="info-tip">?<span class="tip-text">Blue line is your station's actual readings. Orange line is a running average to smooth out the daily swings. The shaded band shows the 30-year normal high/low range from Eugene Airport — if the blue line is above it, it's warmer than average.</span></span></div>
       <div class="chart-card"><div class="chart-header"><div class="chart-legend"><div class="legend-item"><div class="legend-dot" style="background:var(--chart-temp)"></div>Actual</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Running Avg</div><div class="legend-item"><div class="legend-dot" style="background:var(--orange);opacity:0.2"></div>Normal Range</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="explorerTempChart"></canvas></div></div>
