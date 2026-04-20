@@ -1,9 +1,7 @@
 name: Collect Weather Data
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'  # runs every 5 minutes
-  workflow_dispatch:  # allows manual trigger
+  workflow_dispatch:  # manual trigger only — scheduled runs disabled (Supabase pulls data directly)
 
 jobs:
   collect:
