@@ -1,0 +1,27 @@
+name: Fetch Eugene Climate Data
+
+on:
+  schedule:
+    - cron: '15 14 * * *'  # runs daily at 7:15 AM Pacific (14:15 UTC)
+  workflow_dispatch:  # allows manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch Eugene climate data
+        env:
+          NOAA_TOKEN: ${{ secrets.NOAA_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python fetch_eugene_climate.py

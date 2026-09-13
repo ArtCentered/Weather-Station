@@ -3,9 +3,9 @@ import requests
 import time
 from datetime import datetime, timedelta
 
-NOAA_TOKEN = os.environ.get('NOAA_TOKEN', 'ZXeGHVMGiTOCrCWntivNqeqxRZjXpZnV')
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://qafjqqnwnxzeluikjhoz.supabase.co')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhZmpxcW53bnh6ZWx1aWtqaG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzY1ODMsImV4cCI6MjA5MTYxMjU4M30.zdqSoeNxSH316m12PcbhNjRoJuWJz6s_klJLvuDuBdE')
+NOAA_TOKEN = os.environ['NOAA_TOKEN']
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_KEY']
 STATION_ID = 'GHCND:USW00024221'
 
 HEADERS_NOAA = {'token': NOAA_TOKEN}

@@ -1,0 +1,26 @@
+name: Backfill Eugene Climate Data
+
+on:
+  workflow_dispatch:  # manual trigger only — fills the last 365 days of NOAA daily data + normals
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run Eugene backfill
+        env:
+          NOAA_TOKEN: ${{ secrets.NOAA_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python backfill_eugene.py
