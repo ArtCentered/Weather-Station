@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 import time
 from datetime import datetime, timedelta
@@ -54,7 +55,7 @@ def save_batch(records):
     if not records:
         return
     result = requests.post(
-        f'{SUPABASE_URL}/rest/v1/eugene_climate',
+        f'{SUPABASE_URL}/rest/v1/eugene_climate?on_conflict=date',
         json=records, headers=HEADERS_SUPA
     )
     result.raise_for_status()
@@ -86,6 +87,7 @@ print(f'Total normals: {len(all_normals)} days')
 
 # Now fetch daily data in monthly chunks
 total = 0
+failures = []
 cursor = start
 while cursor < today:
     chunk_end = min(cursor + timedelta(days=30), today - timedelta(days=1))
@@ -120,8 +122,14 @@ while cursor < today:
         print(f'  Saved {len(records)} days (total: {total})')
     except Exception as ex:
         print(f'  Error: {ex}')
+        failures.append(f'{s}..{e}: {ex}')
 
     cursor = chunk_end + timedelta(days=1)
     time.sleep(0.3)  # respect rate limit
 
 print(f'\nBackfill complete! {total} days saved.')
+if failures:
+    print(f'\n{len(failures)} chunk(s) failed:')
+    for f in failures:
+        print(f'  {f}')
+    sys.exit(1)

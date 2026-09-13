@@ -12,7 +12,7 @@ HEADERS_SUPA = {
     'apikey': SUPABASE_KEY,
     'Authorization': f'Bearer {SUPABASE_KEY}',
     'Content-Type': 'application/json',
-    'Prefer': 'resolution=ignore-duplicates'
+    'Prefer': 'resolution=merge-duplicates'
 }
 
 def fetch_daily_data(start_date, end_date):
@@ -60,7 +60,7 @@ def save_to_supabase(records):
     if not records:
         return
     result = requests.post(
-        f'{SUPABASE_URL}/rest/v1/eugene_climate',
+        f'{SUPABASE_URL}/rest/v1/eugene_climate?on_conflict=date',
         json=records,
         headers=HEADERS_SUPA
     )
