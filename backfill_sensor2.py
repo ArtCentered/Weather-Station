@@ -5,11 +5,14 @@ import sys
 from datetime import datetime, timezone, timedelta
 from urllib.parse import quote
 
-AWN_API_KEY = '71c90c3c356742fabb616b2880410900291dfdc82c57465e8942f025328287bd'
-AWN_APP_KEY = 'd66978568ea646efa351ac2d5d728f5d31f848c9c07a410bba43e16bd128c4db'
-AWN_MAC = 'C4:D8:D5:01:FA:C9'
-SUPABASE_URL = 'https://qafjqqnwnxzeluikjhoz.supabase.co'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhZmpxcW53bnh6ZWx1aWtqaG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzY1ODMsImV4cCI6MjA5MTYxMjU4M30.zdqSoeNxSH316m12PcbhNjRoJuWJz6s_klJLvuDuBdE'
+import os
+
+# Credentials from environment (set as GitHub Actions secrets or export locally)
+AWN_API_KEY = os.environ['AWN_API_KEY']
+AWN_APP_KEY = os.environ['AWN_APP_KEY']
+AWN_MAC = os.environ['AWN_MAC_ADDRESS']
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_KEY']
 
 HEADERS_SUPA = {
     'apikey': SUPABASE_KEY,
